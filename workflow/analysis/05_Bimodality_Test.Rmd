@@ -1,0 +1,235 @@
+---
+title: "Bimodality Test (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.samples.rds.path: "../../results/01_Filter_Samples"
+  input.variability.rds.path: "../../results/03_Variability_Plots"
+  output.rds.path: "../../results/05_Bimodality_Test"
+  species: "DRE"
+  species.name: "Danio rerio"
+  min.replicates: 10
+---
+
+This notebook runs the bimodality test for organ-sex conditions with at least (`r params$min.replicates`) replicates and summarizes the results.
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+# Install BimodalIndex
+packages <- c("dplyr","tibble","matrixStats","BimodalIndex","ggplot2","ggpubr")
+
+for (p in packages) {
+  if (!require(p, character.only=TRUE)) {
+    print(paste("Installing", p))
+    install.packages(p, character.only=TRUE)
+    renv::snapshot()
+  }
+  print(paste("Loading", p))
+  library(p, character.only=TRUE)
+}
+```
+
+## Functions
+```{r source-functions}
+source("../functions/bimodality_test.R")
+source("../functions/bimodality_test_plots.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Expression levels
+```{r import-expression-levels}
+# Load saved data from 01_Filter_Samples.Rmd
+# Normalized within-condition
+filtered.samples <- readRDS(
+  file.path(params$input.samples.rds.path,
+            paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+```
+
+### Expression variability
+```{r import-variability}
+# Load processed expression variability estimates from 03_Variability_Plots.Rmd
+jack.bind <- readRDS(
+  file.path(params$input.variability.rds.path,
+            paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
+```
+
+# Main {.tabset}
+
+## Data processing
+
+### Select conditions with minimum replicates
+```{r select-conditions}
+filtered.samples.retained <- list()
+
+filtered.samples.retained$conditions <- filtered.samples$conditions %>%
+  dplyr::filter(n>=params$min.replicates)
+
+filtered.samples.retained$metadata <- filtered.samples$metadata %>%
+  dplyr::filter(grepl(paste(filtered.samples.retained$conditions$regex,collapse="|"),.$SampleName))
+
+if ("Sex" %in% colnames(filtered.samples.retained$conditions)) {
+  conditions <- 
+    paste(filtered.samples.retained$conditions$Tissue, 
+          filtered.samples.retained$conditions$Sex, sep="_")
+} else {
+  conditions <- filtered.samples.retained$conditions$Tissue
+}
+
+filtered.samples.retained$log2.tmm.cpm.gf <- vector(mode="list", length=length(conditions))
+names(filtered.samples.retained$log2.tmm.cpm.gf) <- conditions
+
+jack.condition.retained <- vector(mode="list", length=length(conditions))
+names(jack.condition.retained) <- conditions
+
+for (c in 1:length(conditions)) {
+  if ("Sex" %in% colnames(filtered.samples.retained$conditions)) {
+    t <- filtered.samples.retained$conditions$Tissue[[c]]
+    s <- filtered.samples.retained$conditions$Sex[[c]]
+    
+    ts <- paste(t,s,sep="_")
+    
+    filtered.samples.retained$log2.tmm.cpm.gf[[ts]] <- filtered.samples$log2.tmm.cpm.gf[[t]][[s]]
+    
+    jack.condition.retained[[ts]] <- jack.bind %>%
+      dplyr::filter(Biotype=="protein_coding") %>%
+      dplyr::filter(paste(.$Tissue, .$Sex, sep="_")==ts)
+    
+  } else {
+    ts <- filtered.samples.retained$conditions$Tissue[[c]]
+    
+    filtered.samples.retained$log2.tmm.cpm.gf[[ts]] <- filtered.samples$log2.tmm.cpm.gf[[ts]]
+    
+    jack.condition.retained[[ts]] <- jack.bind %>%
+      dplyr::filter(Biotype=="protein_coding") %>%
+      dplyr::filter(Tissue==ts)
+  }
+  
+  # Filter gene list
+  filtered.samples.retained$log2.tmm.cpm.gf[[ts]] <- filtered.samples.retained$log2.tmm.cpm.gf[[ts]] %>%
+    .[rownames(.) %in% jack.condition.retained[[ts]]$GeneID,]
+}
+```
+
+### Compute z-score per condition
+```{r compute-zscore}
+zscore.matrix <- lapply(setNames(conditions, conditions), function(ts) {
+  zscore(filtered.samples.retained$log2.tmm.cpm.gf[[ts]])
+})
+```
+
+### Compute bimodality test per condition
+```{r compute-bimodality-index}
+bimodality.test <- lapply(setNames(conditions, conditions), function(ts) {
+  print(ts)
+  bimodalIndex(zscore.matrix[[ts]]) %>%
+    tibble::rownames_to_column(var="GeneID")
+})
+```
+
+### Bin variability ranks
+```{r bin-var-ranks}
+for (ts in conditions) {
+  bimodality.test[[ts]]$VarRank <-
+    vapply(bimodality.test[[ts]]$GeneID, FUN.VALUE=numeric(1), FUN=function(g) {
+      jack.condition.retained[[ts]]$Mean_Local_Rank_Log2CV[jack.condition.retained[[ts]]$GeneID==g]
+    })
+  
+  # Group variability ranks into bins of size 0.1
+  bimodality.test[[ts]]$VarRankBin <- round(bimodality.test[[ts]]$VarRank, 1)
+}
+```
+
+## Plots
+
+### Boxplots - Bimodality index (BI) by variability rank
+
+```{r bind-df}
+# Bind data frames for plotting
+bimodality.test.bind <- dplyr::bind_rows(bimodality.test, .id="Condition")
+```
+
+#### Landscape
+```{r boxplot-bimodality-index-landscape, fig.width=28, fig.height=18}
+boxplot_bimodality_by_variability(bimodality.test.bind, title=params$species.name, facet=TRUE)
+```
+
+#### Portrait
+```{r boxplot-bimodality-index-portrait, fig.width=18, fig.height=22}
+boxplot_bimodality_by_variability(bimodality.test.bind, title=params$species.name, facet=TRUE)
+```
+
+### Expression level z-scores by variability rank bin
+
+**Question:** At which variability rank does the z-score distribution visually appear bimodal?
+
+#### All
+```{r fig.width=8, fig.height=5}
+# Will only print last plot to HTML, but works on RStudio
+for (ts in conditions) {
+  plot_density_zscore(zscore.matrix[[ts]], bimodality.test[[ts]], title=ts)
+}
+```
+
+#### Example: Brain
+```{r plot-density-zscore-var-rank-brain, fig.width=8, fig.height=5}
+if ("brain" %in% filtered.samples.retained$conditions$Tissue) {
+  if ("Sex" %in% colnames(filtered.samples.retained$conditions)) {
+    ts <- "brain_F"
+  } else { ts <- "brain" }
+
+  plot_density_zscore(zscore.matrix[[ts]], bimodality.test[[ts]], title=ts)  
+}
+
+```
+
+#### Example: Gonads
+```{r plot-density-zscore-var-rank-gonads, fig.width=8, fig.height=5}
+if ("gonads" %in% filtered.samples.retained$condtions$Tissue) {
+  if ("Sex" %in% colnames(filtered.samples.retained$conditions)) {
+    ts <- "gonads_F"
+  } else { ts <- "gonads" }
+
+  plot_density_zscore(zscore.matrix[[ts]], bimodality.test[[ts]], title=ts)  
+}
+```
+
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+saveRDS(filtered.samples.retained,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "filtered.samples.retained.rds", sep="_")))
+
+saveRDS(jack.condition.retained,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.condition.retained.rds", sep="_")))
+
+saveRDS(zscore.matrix,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "zscore.matrix.rds", sep="_")))
+
+saveRDS(bimodality.test,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "bimodality.test.rds", sep="_")))
+
+saveRDS(bimodality.test.bind,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "bimodality.test.bind.rds", sep="_")))
+```
+

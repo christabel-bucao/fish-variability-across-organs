@@ -1,0 +1,112 @@
+---
+title: "Selection on organ-biased genes (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.selection.rds.path: "../../results/08_Selection"
+  input.tau.rds.path: "../../results/10_Expression_Specificity"
+  output.rds.path: "../../results/11_Selection_Organ_Bias"
+  species: "DRE"
+  species.name: "Danio rerio"
+  tau.cutoff: 0.30
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/selection_plots.R")
+```
+
+## Data
+
+### Filtered selection data
+```{r import-filtered-selection-data}
+# Load saved data from 08_Selection.Rmd
+selectome.sub <- readRDS(
+  file.path(params$input.selection.rds.path,
+            paste(params$species, "selectome.sub.rds", sep="_")))
+```
+
+### Expression specificity (tau)
+```{r import-tau}
+# Load expression specificity computations from 10_Expression_Specificity.Rmd
+## Conditions available in all species
+filtered.samples <- readRDS(
+  file.path(params$input.tau.rds.path,
+            paste(params$species, "filtered.samples.common.rds", sep="_")))  
+```
+
+# Main {.tabset}
+
+## Bind selection - expression specificity - primary organ
+```{r bind-selection-tau-organ-bias}
+selection.tau.tissue <- selectome.sub$Bgd %>%
+  dplyr::inner_join(filtered.samples$expr.rank.first, by="GeneID")
+
+selection.tau.tissue$TissueBias <-
+  apply(selection.tau.tissue, MARGIN=1, function(r) {
+    if (r[["tau"]] <= params$tau.cutoff) { "broad" }
+    else { r[["PrimaryTissue"]] }
+  })
+
+# Only organ-biased genes
+selection.tau.tissue.biased <- selection.tau.tissue %>%
+  dplyr::filter(tau > params$tau.cutoff)
+```
+
+## Strength of purifying selection
+
+### Boxplot
+```{r boxplot-selection-organ-bias, fig.width=10, fig.height=8}
+comparisons <- list(c("brain","broad"))
+
+ggplot(selection.tau.tissue, 
+       aes(x=reorder(TissueBias, omega0, FUN=median, na.rm=TRUE), 
+           y=omega0)) +
+  stat_boxplot(geom='errorbar') +
+  geom_boxplot(notch=TRUE) +
+  ylim(c(-0.01,0.50)) +
+      stat_summary(fun.data=annotate_n, geom="text", fun=median, 
+                   position= position_dodge(width = 0.75), size=5) +      
+      stat_summary(fun.data=annotate_median, geom="text", fun=median, 
+                   position=position_dodge(width = 0.75), size=5) +
+  stat_compare_means(aes(label=..p.signif..),
+                     test="wilcox.test",
+                     comparisons=comparisons,
+                     label.y=0.40, size=7) +
+  labs(title=params$species.name,
+       x="Organ bias", y="ω0 (dN/dS < 1)") +
+  theme_bw() +
+  theme(plot.title=element_text(size=20, face="italic"),
+        axis.title=element_text(size=18),
+        axis.text=element_text(size=14))
+```
+
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+saveRDS(selection.tau.tissue,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selection.tau.tissue.rds", sep="_")))
+
+saveRDS(selection.tau.tissue.biased,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selection.tau.tissue.biased.rds", sep="_")))
+```
+

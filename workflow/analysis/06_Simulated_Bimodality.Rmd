@@ -1,0 +1,352 @@
+---
+title: "Simulated Bimodality (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  gene.metadata.path: "../../data/gene_metadata"
+  input.samples.rds.path: "../../results/01_Filter_Samples"
+  input.variability.rds.path: "../../results/03_Variability_Plots"
+  output.rds.path: "../../results/06_Simulated_Bimodality"
+  species: "ELU"
+  species.name: "Esox lucius"
+  sex: "F"
+  total.replicates: 10
+  tissue1: "brain"
+  tissue2: "gonads"
+  set.seed: 12345
+  min.cpm: 1.0
+  min.percentile: 0.00
+  max.percentile: 0.95
+  win.size: 100
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+library(tibble)
+library(ggplot2)
+library(ggpubr)
+library(BimodalIndex)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/filter_samples.R")
+source("../functions/variability_jackknife.R")
+source("../functions/bimodality_test.R")
+source("../functions/bimodality_test_plots.R")
+#source("../functions/annotate_boxplots.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Gene biotype
+```{r import-biotype}
+biotype <- 
+  read.delim(file.path(params$gene.metadata.path, 
+                       paste(params$species, "biotype_Ensembl_105.txt", sep="_")), 
+             sep="\t")
+```
+
+### Expression levels
+```{r import-expression-levels}
+# Load saved data from 01_Filter_Samples.Rmd
+## Normalized separately per condition
+samples.norm.within <- readRDS(
+  file.path(params$input.samples.rds.path,
+            paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+
+## Normalized across conditions
+samples.norm.across <- readRDS(
+  file.path(params$input.samples.rds.path,
+            paste(params$species, "4_reps_data.qc2.cor.rds", sep="_")))
+```
+
+### Expression variability
+```{r import-variability}
+# Load processed expression variability estimates from 03_Variability_Plots.Rmd
+jack.bind <- readRDS(
+  file.path(params$input.variability.rds.path,
+            paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
+```
+
+# Main {.tabset}
+
+## Observed bimodality
+
+### Filter samples and genes
+```{r filter-samples-tissue1}
+jack.tissue1 <- jack.bind %>%
+  dplyr::filter(Biotype=="protein_coding") %>%
+  dplyr::filter(Tissue==params$tissue1 & Sex==params$sex)
+
+expr.matrix.tissue1 <- samples.norm.within$log2.tmm.cpm.gf[[params$tissue1]][[params$sex]] %>%
+  .[rownames(.) %in% jack.tissue1$GeneID,]
+```
+
+### Compute z-score
+```{r compute-zscore-tissue1}
+zscore.matrix.tissue1 <- zscore(expr.matrix.tissue1)
+```
+
+### Bimodality test
+```{r compute-bimodality-index-tissue1}
+bimodality.test.tissue1 <- 
+  bimodalIndex(zscore.matrix.tissue1) %>%
+  tibble::rownames_to_column(var="GeneID")
+```
+
+```{r}
+summary(bimodality.test.tissue1$BI)
+```
+
+### Variability rank - Bimodality index
+
+#### Bin variability ranks
+```{r bin-var-ranks-tissue1}
+bimodality.test.tissue1$VarRank <-
+  vapply(bimodality.test.tissue1$GeneID, FUN.VALUE=numeric(1), FUN=function(g) {
+    jack.tissue1$Mean_Local_Rank_Log2CV[jack.tissue1$GeneID==g]
+  })
+
+# Group variability ranks into bins of size 0.1
+bimodality.test.tissue1$VarRankBin <- round(bimodality.test.tissue1$VarRank,1)
+```
+
+```{r}
+dplyr::count(bimodality.test.tissue1, VarRankBin)
+```
+
+#### Boxplot - By variability rank bin
+```{r boxplot-bimodality-by-var-rank-tissue1, fig.width=12, fig.height=12}
+boxplot_bimodality_by_variability(
+  bimodality.test.tissue1, 
+  title=params$species.name, subtitle=paste(params$tissue1, params$sex),
+  facet=FALSE)
+```
+
+### Expression level z-scores by BI value
+
+**Question:** At which value of BI does the z-score distribution visually appear bimodal?
+
+#### Bin BI values
+```{r bin-bi-values-tissue1}
+# Group BI values into bins of size 0.1
+bimodality.test.tissue1$BIBin <- round(bimodality.test.tissue1$BI,1)
+
+dplyr::count(bimodality.test.tissue1, BIBin)
+```
+
+#### Density plot
+```{r plot-density-zscore-bi-tissue1, fig.width=8, fig.height=5}
+plot_density_zscore_by_bi(zscore.matrix.tissue1, bimodality.test.tissue1, title="")
+```
+
+### Expression level z-scores by variability rank bin
+
+**Question:** At which variability rank does the z-score distribution visually appear bimodal?
+
+```{r plot-density-zscore-tissue1, fig.width=8, fig.height=5}
+plot_density_zscore(zscore.matrix.tissue1, bimodality.test.tissue1, title="")
+```
+
+## Simulated strong bimodality
+
+### Pre-processing
+
+#### Generate expression matrix from two conditions
+```{r generate-count-matrix-tissue1-2}
+set.seed(params$set.seed)
+replicates.tissue1 <- 
+  sample(colnames(samples.norm.within$counts[[params$tissue1]][[params$sex]]), 
+         size=params$total.replicates/2, 
+         replace=FALSE)
+replicates.tissue2 <- 
+  sample(colnames(samples.norm.within$counts[[params$tissue2]][[params$sex]]), 
+         size=params$total.replicates/2, 
+         replace=FALSE)
+
+metadata.tissue1.2 <- samples.norm.across$metadata %>%
+  dplyr::filter(SampleName %in% c(replicates.tissue1, replicates.tissue2))
+
+counts.tissue1.2 <- samples.norm.across$counts[,c(replicates.tissue1, replicates.tissue2)]
+```
+
+#### Gene filtering and normalization
+```{r filter-genes-tissue1-2}
+counts.gf.tissue1.2 <- 
+  filter_genes_by_cpm(counts.matrix=counts.tissue1.2, 
+                      metadata=metadata.tissue.1.2, 
+                      min.cpm=params$min.cpm)
+log2.tmm.cpm.gf.tissue1.2 <-
+  transform_counts_to_tmm_cpm(counts.matrix=counts.gf.tissue1.2, 
+                              metadata=metadata.tissue1.2,
+                              log2=TRUE, shift.min=TRUE)
+```
+
+#### Jackknifed expression variability estimates
+```{r run-variability-jackknife-tissue1-2}
+jack.tissue1.2 <- 
+  jackknife_resid_log2cv(expr.matrix=log2.tmm.cpm.gf.tissue1.2,
+                         min.percentile=params$min.percentile,
+                         max.percentile=params$max.percentile,
+                         win.size=params$win.size)
+jack.tissue1.2 <- jack.tissue1.2[["summary"]] %>%
+  tibble::rownames_to_column(var="GeneID")
+```
+
+##### Filter by biotype
+```{r filter-biotype-tissue1-2}
+jack.tissue1.2 <- jack.tissue1.2 %>%
+  dplyr::inner_join(biotype[,c("Gene.stable.ID","Gene.type")],
+                    by=c("GeneID"="Gene.stable.ID"))
+
+colnames(jack.tissue1.2)[length(jack.tissue1.2)] <- "Biotype"
+
+jack.tissue1.2 <- jack.tissue1.2 %>%
+   dplyr::filter(Biotype=="protein_coding")
+```
+
+#### Filter expression matrix
+```{r filter-expression-matrix-tissue1-2}
+expr.matrix.tissue1.2 <- 
+  log2.tmm.cpm.gf.tissue1.2[rownames(log2.tmm.cpm.gf.tissue1.2) %in% jack.tissue1.2$GeneID,]
+```
+
+### Compute z-score
+```{r compute-zscore-tissue1-2}
+zscore.matrix.tissue1.2 <- zscore(expr.matrix.tissue1.2)
+```
+
+### Bimodality test
+```{r compute-bimodality-index-tissue1-2}
+bimodality.test.tissue1.2 <- 
+  bimodalIndex(zscore.matrix.tissue1.2) %>%
+  tibble::rownames_to_column(var="GeneID")
+```
+
+```{r}
+summary(bimodality.test.tissue1.2$BI)
+```
+
+### Variability rank - Bimodality index
+
+#### Bin variability ranks
+```{r bin-var-ranks-tissue1-2}
+bimodality.test.tissue1.2$VarRank <-
+  vapply(bimodality.test.tissue1.2$GeneID, FUN.VALUE=numeric(1), FUN=function(g) {
+    jack.tissue1.2$Mean_Local_Rank_Log2CV[jack.tissue1.2$GeneID==g]
+  })
+
+# Group variability ranks into bins of size 0.1
+bimodality.test.tissue1.2$VarRankBin <- round(bimodality.test.tissue1.2$VarRank,1)
+```
+
+```{r}
+dplyr::count(bimodality.test.tissue1.2, VarRankBin)
+```
+
+#### Boxplot - By variability rank bin
+```{r boxplot-bimodality-by-var-rank-tissue1-2, fig.width=12, fig.height=12}
+boxplot_bimodality_by_variability(
+  bimodality.test.tissue1.2, 
+  title=params$species.name, subtitle=paste(params$tissue1, params$tissue2, params$sex),
+  facet=FALSE)
+```
+
+```{r boxplot-bimodality-by-var-rank-tissue1-2-v2, fig.width=12, fig.height=12}
+# Single color, set ylim
+boxplot_bimodality_by_variability_v2(
+  bimodality.test.tissue1.2, 
+  title=params$species.name, subtitle=paste(params$tissue1, params$tissue2, params$sex))
+```
+
+### Expression level z-scores by BI value
+
+**Question:** At which value of BI does the z-score distribution visually appear bimodal?
+
+#### Bin BI values
+```{r bin-bi-values-tissue1-2}
+# Group BI values into bins of size 0.1
+bimodality.test.tissue1.2$BIBin <- round(bimodality.test.tissue1.2$BI,1)
+
+dplyr::count(bimodality.test.tissue1.2, BIBin)
+```
+
+#### Density plot
+```{r plot-density-zscore-bi-tissue1-2, fig.width=8, fig.height=5}
+plot_density_zscore_by_bi(zscore.matrix.tissue1.2, bimodality.test.tissue1.2, title="")
+```
+
+### Expression level z-scores by variability rank bin
+
+**Question:** At which variability rank does the z-score distribution visually appear bimodal?
+
+```{r plot-density-zscore-tissue1-2, fig.width=8, fig.height=5}
+plot_density_zscore(zscore.matrix.tissue1.2, bimodality.test.tissue1.2, title="")
+```
+
+## Comparison
+
+### Combine observed and mixed dataset
+```{r combine-observed-mixed-datasets}
+bimodality.test.combined <- 
+  dplyr::bind_rows(list("observed"=bimodality.test.tissue1, "mixed"=bimodality.test.tissue1.2), .id="Dataset")
+bimodality.test.combined$Dataset <- factor(bimodality.test.combined$Dataset, levels=c("observed","mixed"))
+```
+
+### Boxplot - By variability rank bin
+```{r boxplot-bimodality-by-var-rank-combined, fig.width=16, fig.height=12}
+boxplot_bimodality_by_variability_comparison(
+  bimodality.test.combined, title=params$species.name)
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+# Observed
+saveRDS(zscore.matrix.tissue1,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "zscore.matrix.tissue1.rds", sep="_")))
+
+saveRDS(bimodality.test.tissue1,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "bimodality.test.tissue1.rds", sep="_")))
+
+# Simulated
+saveRDS(jack.tissue1.2,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.tissue1.2.rds", sep="_")))
+
+saveRDS(expr.matrix.tissue1.2,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "expr.matrix.tissue1.2.rds", sep="_")))
+
+saveRDS(zscore.matrix.tissue1.2,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "zscore.matrix.tissue1.2.rds", sep="_")))
+
+saveRDS(bimodality.test.tissue1.2,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "bimodality.test.tissue1.2.rds", sep="_")))
+
+# Combined
+saveRDS(bimodality.test.combined,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "bimodality.test.combined.rds", sep="_")))
+```
+

@@ -1,0 +1,287 @@
+---
+title: "Variability rank correlation across conditions (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.variability.rds.path: "../../results/03_Variability_Plots"
+  output.rds.path: "../../results/04_Correlation_Across_Conditions"
+  species: "DRE"
+  species.name: "Danio rerio"
+  all.nonzero.matrix: FALSE
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+# Install reshape2
+packages <- c("tidyr","dplyr","tibble","reshape2","ggplot2","viridis")
+
+for (p in packages) {
+  if (!require(p, character.only=TRUE)) {
+    print(paste("Installing", p))
+    install.packages(p, character.only=TRUE)
+    renv::snapshot()
+  }
+  print(paste("Loading", p))
+  library(p, character.only=TRUE)
+}
+```
+
+## Functions
+```{r source-functions}
+source("../functions/correlation_across_conditions_plots.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Expression variability
+```{r import--variability}
+# Load processed expression variability estimates from 03_Variability_Plots.Rmd
+if (!params$all.nonzero.matrix) {
+  jack.bind<- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
+} else {
+  jack.bind<- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.cv.bind.nonzero.rds", sep="_"))) 
+}
+```
+
+# Main {.tabset}
+
+## Mean expression level
+
+### Expression matrix without missing values
+```{r generate-expr-matrix}
+# All values are estimates generated from jackknife (n-1) resampling
+if ("Sex" %in% colnames(jack.bind)) {
+  expr.matrix <- jack.bind[,c("Tissue","Sex","GeneID","Mean_Mean","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  expr.matrix$Condition <- paste(expr.matrix$Tissue, expr.matrix$Sex, sep="_")
+  
+  expr.matrix <- expr.matrix[,c("Condition","GeneID","Mean_Mean")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Mean") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")
+  
+} else {
+  expr.matrix <- jack.bind[,c("Tissue","GeneID","Mean_Mean","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  expr.matrix$Condition <- expr.matrix$Tissue
+  
+  expr.matrix <- expr.matrix[,c("Condition","GeneID","Mean_Mean")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Mean") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")  
+}
+```
+
+```{r}
+# Number of protein-coding genes included
+print(nrow(expr.matrix))
+```
+
+### Correlation matrix
+```{r compute-expr-corr-matrix}
+expr.corr.matrix <- cor(expr.matrix, method="spearman")
+
+expr.corr.matrix.diag <- expr.corr.matrix
+expr.corr.matrix.diag[upper.tri(expr.corr.matrix.diag, diag=TRUE)] <- NA
+
+expr.corr.matrix.melt <- melt(expr.corr.matrix.diag, na.rm=TRUE)
+colnames(expr.corr.matrix.melt) <- c("Condition1", "Condition2", "Spearman")
+```
+
+### Plot - Heatmap
+```{r plot-expr-corr-heatmap, fig.height=10, fig.width=14}
+plot_triangle_correlation_matrix(expr.corr.matrix.melt, title="Expression level")
+```
+
+
+## Log2 CV
+
+### Log2 CV matrix without missing values
+```{r generate-log2cv-matrix}
+# All values are estimates generated from jackknife (n-1) resampling
+if ("Sex" %in% colnames(jack.bind)) {
+  log2.cv.matrix <- jack.bind[,c("Tissue","Sex","GeneID","Mean_Log2CV","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  log2.cv.matrix$Condition <- paste(log2.cv.matrix$Tissue, log2.cv.matrix$Sex, sep="_")
+  
+  log2.cv.matrix <- log2.cv.matrix[,c("Condition","GeneID","Mean_Log2CV")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Log2CV") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")
+  
+} else {
+  log2.cv.matrix <- jack.bind[,c("Tissue","GeneID","Mean_Log2CV","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  log2.cv.matrix$Condition <- log2.cv.matrix$Tissue
+  
+  log2.cv.matrix <- log2.cv.matrix[,c("Condition","GeneID","Mean_Log2CV")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Log2CV") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")  
+}
+```
+
+### Correlation matrix
+```{r compute-log2cv-corr-matrix}
+log2.cv.corr.matrix <- cor(log2.cv.matrix, method="spearman")
+
+log2.cv.corr.matrix.diag <- log2.cv.corr.matrix
+log2.cv.corr.matrix.diag[upper.tri(log2.cv.corr.matrix.diag, diag=TRUE)] <- NA
+
+log2.cv.corr.matrix.melt <- melt(log2.cv.corr.matrix.diag, na.rm=TRUE)
+colnames(log2.cv.corr.matrix.melt) <- c("Condition1", "Condition2", "Spearman")
+```
+
+### Plot - Heatmap
+```{r plot-log2cv-corr-heatmap, fig.height=10, fig.width=14}
+plot_triangle_correlation_matrix(log2.cv.corr.matrix.melt, title="Log2 CV")
+```
+
+## Residual log2 CV
+
+### Residual log2 CV matrix without missing values
+```{r generate-resid-log2cv-matrix}
+# All values are estimates generated from jackknife (n-1) resampling
+if ("Sex" %in% colnames(jack.bind)) {
+  resid.log2.cv.matrix <- jack.bind[,c("Tissue","Sex","GeneID","Mean_Resid_Log2CV","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  resid.log2.cv.matrix$Condition <- paste(resid.log2.cv.matrix$Tissue, resid.log2.cv.matrix$Sex, sep="_")
+  
+  resid.log2.cv.matrix <- resid.log2.cv.matrix[,c("Condition","GeneID","Mean_Resid_Log2CV")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Resid_Log2CV") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")
+} else {
+  resid.log2.cv.matrix <- jack.bind[,c("Tissue","GeneID","Mean_Resid_Log2CV","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  resid.log2.cv.matrix$Condition <- resid.log2.cv.matrix$Tissue
+  
+  resid.log2.cv.matrix <- resid.log2.cv.matrix[,c("Condition","GeneID","Mean_Resid_Log2CV")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Resid_Log2CV") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")  
+}
+```
+
+### Correlation matrix
+```{r compute-resid-log2cv-corr-matrix}
+resid.log2.cv.corr.matrix <- cor(resid.log2.cv.matrix, method="spearman")
+
+resid.log2.cv.corr.matrix.diag <- resid.log2.cv.corr.matrix
+resid.log2.cv.corr.matrix.diag[upper.tri(resid.log2.cv.corr.matrix.diag, diag=TRUE)] <- NA
+
+resid.log2.cv.corr.matrix.melt <- melt(resid.log2.cv.corr.matrix.diag, na.rm=TRUE)
+colnames(resid.log2.cv.corr.matrix.melt) <- c("Condition1", "Condition2", "Spearman")
+```
+
+### Plot - Heatmap
+```{r plot-resid-log2cv-corr-heatmap, fig.height=10, fig.width=14}
+plot_triangle_correlation_matrix(resid.log2.cv.corr.matrix.melt, title="Residual log2 CV")
+```
+
+## Variability rank
+
+### Variability rank matrix without missing values
+```{r generate-var-rank-matrix}
+# All values are estimates generated from jackknife (n-1) resampling
+if ("Sex" %in% colnames(jack.bind)) {
+  var.rank.matrix <- jack.bind[,c("Tissue","Sex","GeneID","Mean_Local_Rank_Log2CV","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  var.rank.matrix$Condition <- paste(var.rank.matrix$Tissue, var.rank.matrix$Sex, sep="_")
+  
+  var.rank.matrix <- var.rank.matrix[,c("Condition","GeneID","Mean_Local_Rank_Log2CV")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Local_Rank_Log2CV") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")
+} else {
+  var.rank.matrix <- jack.bind[,c("Tissue","GeneID","Mean_Local_Rank_Log2CV","Biotype")] %>%
+    dplyr::filter(Biotype=="protein_coding")
+  
+  var.rank.matrix$Condition <- var.rank.matrix$Tissue
+  
+  var.rank.matrix <- var.rank.matrix[,c("Condition","GeneID","Mean_Local_Rank_Log2CV")] %>%
+    tidyr::pivot_wider(names_from=Condition, values_from="Mean_Local_Rank_Log2CV") %>%
+    na.omit(.) %>%
+    tibble::column_to_rownames(var="GeneID")  
+}
+```
+
+### Correlation matrix
+```{r compute-var-rank-corr-matrix}
+var.rank.corr.matrix <- cor(var.rank.matrix, method="spearman")
+
+var.rank.corr.matrix.diag <- var.rank.corr.matrix
+var.rank.corr.matrix.diag[upper.tri(var.rank.corr.matrix.diag, diag=TRUE)] <- NA
+
+var.rank.corr.matrix.melt <- melt(var.rank.corr.matrix.diag, na.rm=TRUE)
+colnames(var.rank.corr.matrix.melt) <- c("Condition1", "Condition2", "Spearman")
+```
+
+### Plot - Heatmap
+```{r plot-var-rank-corr-heatmap, fig.height=10, fig.width=14}
+plot_triangle_correlation_matrix(var.rank.corr.matrix.melt, title="Variability rank")
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+if (!params$all.nonzero.matrix) {
+  saveRDS(expr.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.corr.matrix.melt.rds", sep="_")))
+  
+  saveRDS(log2.cv.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "log2.cv.corr.matrix.melt.rds", sep="_")))
+  
+  saveRDS(resid.log2.cv.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "resid.log2.cv.corr.matrix.melt.rds", sep="_")))
+
+  saveRDS(var.rank.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "var.rank.corr.matrix.melt.rds", sep="_")))
+
+} else {
+  saveRDS(expr.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.corr.matrix.melt.nonzero.rds", sep="_")))
+  
+  saveRDS(log2.cv.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "log2.cv.corr.matrix.melt.nonzero.rds", sep="_")))
+  
+  saveRDS(resid.log2.cv.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "resid.log2.cv.corr.matrix.melt.nonzero.rds", sep="_")))
+
+  saveRDS(var.rank.corr.matrix.melt,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "var.rank.corr.matrix.melt.nonzero.rds", sep="_")))
+}
+```

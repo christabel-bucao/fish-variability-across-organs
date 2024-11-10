@@ -1,0 +1,232 @@
+---
+title: "Variability of organ-biased genes (observed vs. randomized) (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.rds.path: "../../results/12_Organ_Bias"
+  output.rds.path: "../../results/14_Organ_Bias_Observed_vs_Random"
+  species: "DRE"
+  species.name: "Danio rerio"
+  seed.run1: 12345
+  seed.run2: 67890
+  plot.height: 18
+  plot.width: 22
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+
+knitr::opts_chunk$set(fig.height=params$plot.height, fig.width=params$plot.width)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/organ_bias.R")
+source("../functions/organ_bias_plots.R")
+```
+
+## Data
+
+### Multiple pairwise comparisons
+```{r import-pairwise-comparisons}
+# Load results of multiple pairwise comparisons from 12_Organ_Bias.Rmd
+## Mean expression
+comparisons.mean.expr.list <- vector(mode="list", length=3)
+names(comparisons.mean.expr.list) <- c("observed", paste0("rnd",params$seed.run1), paste0("rnd",params$seed.run2))
+
+comparisons.mean.expr.list[["observed"]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.mean.expr.rds", sep="_")))
+
+comparisons.mean.expr.list[[paste0("rnd",params$seed.run1)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.mean.expr", paste0("rnd", params$seed.run1,".rds"), sep="_")))
+
+comparisons.mean.expr.list[[paste0("rnd",params$seed.run2)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.mean.expr", paste0("rnd", params$seed.run2,".rds"), sep="_")))
+
+
+# Log-coefficient of variation
+comparisons.log2cv.list <- vector(mode="list", length=3)
+names(comparisons.log2cv.list) <- c("observed", paste0("rnd",params$seed.run1), paste0("rnd",params$seed.run2))
+
+comparisons.log2cv.list[["observed"]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.log2cv.rds", sep="_")))
+
+comparisons.log2cv.list[[paste0("rnd",params$seed.run1)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.log2cv", paste0("rnd", params$seed.run1,".rds"), sep="_")))
+
+comparisons.log2cv.list[[paste0("rnd",params$seed.run2)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.log2cv", paste0("rnd", params$seed.run2,".rds"), sep="_")))
+
+
+# Residual variation
+comparisons.resid.var.list <- vector(mode="list", length=3)
+names(comparisons.resid.var.list) <- c("observed", paste0("rnd",params$seed.run1), paste0("rnd",params$seed.run2))
+
+comparisons.resid.var.list[["observed"]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.resid.var.rds", sep="_")))
+
+comparisons.resid.var.list[[paste0("rnd",params$seed.run1)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.resid.var", paste0("rnd", params$seed.run1,".rds"), sep="_")))
+
+comparisons.resid.var.list[[paste0("rnd",params$seed.run2)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.resid.var", paste0("rnd", params$seed.run2,".rds"), sep="_")))
+
+# Variability ranks
+comparisons.expr.var.list <- vector(mode="list", length=3)
+names(comparisons.expr.var.list) <- c("observed", paste0("rnd",params$seed.run1), paste0("rnd",params$seed.run2))
+
+comparisons.expr.var.list[["observed"]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.expr.var.rds", sep="_")))
+
+comparisons.expr.var.list[[paste0("rnd",params$seed.run1)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.expr.var", paste0("rnd", params$seed.run1,".rds"), sep="_")))
+
+comparisons.expr.var.list[[paste0("rnd",params$seed.run2)]] <- readRDS(
+  file.path(params$input.rds.path,
+            paste(params$species, "comparisons.expr.var", paste0("rnd", params$seed.run2,".rds"), sep="_")))
+```
+
+# Main {.tabset}
+
+## Mean expression
+
+### Bind results
+```{r bind-results-mean-expression}
+wilcox.mean.expr.bind <- list()
+
+wilcox.mean.expr.bind$complete <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.mean.expr.list, apply.pvalue.cutoff=FALSE)
+wilcox.mean.expr.bind$signif <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.mean.expr.list, apply.pvalue.cutoff=TRUE, adj.p=0.05)
+```
+
+### Plot - Heatmap
+```{r plot-combined-heatmap-mean-expression}
+# Looks much better in the HTML document than the RStudio console
+heatmap_effect_size_combined_comparisons_blue2red(
+  wilcox.df=wilcox.mean.expr.bind$complete, 
+  cross.species=FALSE, species=params$species.name,
+  value="mean", adj.p=0.05)
+
+heatmap_effect_size_combined_comparisons(
+  wilcox.df=wilcox.mean.expr.bind$signif, 
+  cross.species=FALSE, species=params$species.name, value="mean")
+```
+
+## Log-coefficient of variation
+
+### Bind results
+```{r bind-results-log2cv}
+wilcox.log2cv.bind <- list()
+
+wilcox.log2cv.bind$complete <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.log2cv.list, apply.pvalue.cutoff=FALSE)
+wilcox.log2cv.bind$signif <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.log2cv.list, apply.pvalue.cutoff=TRUE, adj.p=0.05)
+```
+
+### Plot - Heatmap
+```{r plot-combined-heatmap-log2cv}
+# Looks much better in the HTML document than the RStudio console
+heatmap_effect_size_combined_comparisons_blue2red(
+  wilcox.df=wilcox.log2cv.bind$complete, 
+  cross.species=FALSE, species=params$species.name,
+  value="log2cv", adj.p=0.05)
+
+heatmap_effect_size_combined_comparisons(
+  wilcox.df=wilcox.log2cv.bind$signif, 
+  cross.species=FALSE, species=params$species.name, value="log2cv")
+```
+
+## Residual variation
+
+### Bind results
+```{r bind-results-resid-var}
+wilcox.resid.var.bind <- list()
+
+wilcox.resid.var.bind$complete <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.resid.var.list, apply.pvalue.cutoff=FALSE)
+wilcox.resid.var.bind$signif <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.resid.var.list, apply.pvalue.cutoff=TRUE, adj.p=0.05)
+```
+
+### Plot - Heatmap
+```{r plot-combined-heatmap-resid-var}
+# Looks much better in the HTML document than the RStudio console
+heatmap_effect_size_combined_comparisons_blue2red(
+  wilcox.df=wilcox.resid.var.bind$complete, 
+  cross.species=FALSE, species=params$species.name,
+  value="residual_variation", adj.p=0.05)
+
+heatmap_effect_size_combined_comparisons(
+  wilcox.df=wilcox.resid.var.bind$signif, 
+  cross.species=FALSE, species=params$species.name, value="residual_variation")
+```
+
+## Variability ranks
+
+### Bind results
+```{r bind-results-variability}
+wilcox.expr.var.bind <- list()
+
+wilcox.expr.var.bind$complete <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.expr.var.list, apply.pvalue.cutoff=FALSE)
+wilcox.expr.var.bind$signif <- 
+  bind_pairwise_comparisons_observed_vs_random(comparisons.expr.var.list, apply.pvalue.cutoff=TRUE, adj.p=0.05)
+```
+
+### Plot - Heatmap
+```{r plot-combined-heatmap-variability}
+# Looks much better in the HTML document than the RStudio console
+heatmap_effect_size_combined_comparisons_blue2red(
+  wilcox.df=wilcox.expr.var.bind$complete, 
+  cross.species=FALSE, species=params$species.name,
+  value="variability", adj.p=0.05)
+
+heatmap_effect_size_combined_comparisons(
+  wilcox.df=wilcox.expr.var.bind$signif, 
+  cross.species=FALSE, species=params$species.name, value="variability")
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+saveRDS(wilcox.mean.expr.bind,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "wilcox.mean.expr.bind.rds", sep="_")))
+
+saveRDS(wilcox.log2cv.bind,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "wilcox.log2cv.bind.rds", sep="_")))
+
+saveRDS(wilcox.resid.var.bind,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "wilcox.resid.var.bind.rds", sep="_")))
+
+saveRDS(wilcox.expr.var.bind,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "wilcox.expr.var.bind.rds", sep="_")))
+```
+
+

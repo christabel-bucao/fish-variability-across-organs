@@ -1,0 +1,384 @@
+---
+title: "Variability Plots (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  gene.metadata.path: "../../data/gene_metadata"
+  input.samples.rds.path: "../../results/01_Filter_Samples"
+  input.variability.rds.path: "../../results/02_Variability_Jackknife"
+  output.rds.path: "../../results/03_Variability_Plots"
+  species: "DRE"
+  species.name: "Danio rerio"
+  min.percentile: 0.00
+  max.percentile: 0.95
+  all.nonzero.matrix: FALSE
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/helper_functions.R")
+source("../functions/variability_jackknife.R")
+source("../functions/variability_plots.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Metadata
+```{r import-metadata}
+biotype <- 
+  read.delim(file.path(params$gene.metadata.path, 
+                       paste(params$species, "biotype_Ensembl_105.txt", sep="_")), 
+             sep="\t")
+```
+
+### Processed data
+```{r import-filtered-samples}
+# Load saved data from 01_Filter_Samples.Rmd
+# Normalized by condition
+if (!params$all.nonzero.matrix) {
+  filtered.samples <- readRDS(
+    file.path(params$input.samples.rds.path,
+              paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+} else {
+  filtered.samples <- readRDS(
+    file.path(params$input.samples.rds.path,
+              paste(params$species, "4_reps_data.conditions.nonzero.rds", sep="_")))  
+}
+
+Tissue <- as.factor(filtered.samples$metadata$Tissue)
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  Sex <- as.factor(filtered.samples$metadata$Sex) 
+}
+
+# Load jackknifed expression variability estimates from 02_Variability_Jackknife.Rmd
+## Adjusted SD
+if (!params$all.nonzero.matrix) {
+  jack.adj.sd <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.adj.sd.rds", sep="_")))
+
+  ## Residual SD
+  jack.resid.sd <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.sd.rds", sep="_")))
+
+  ## Residual CV / Local (residual) CV
+  jack.resid.cv <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.cv.rds", sep="_")))  
+} else {
+  jack.adj.sd <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.adj.sd.nonzero.rds", sep="_")))
+
+  ## Residual SD
+  jack.resid.sd <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.sd.nonzero.rds", sep="_")))
+
+  ## Residual CV / Local (residual) CV
+  jack.resid.cv <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.cv.nonzero.rds", sep="_")))   
+}
+```
+
+# Main {.tabset}
+
+## Initial summary statistics
+```{r compute-summary-statistics}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  summary.stats <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        compute_gene_summary_stats(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+    })
+  })
+  
+  # Remove top and bottom x% of genes by expression level
+  summary.stats <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        summary.stats[[t]][[s]][
+          summary.stats[[t]][[s]]$Rank_Mean>params$min.percentile &
+            summary.stats[[t]][[s]]$Rank_Mean<params$max.percentile,]
+      })
+    })
+  
+  # Remove missing conditions
+  summary.stats <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        summary.stats[[t]][[s]][complete.cases(summary.stats[[t]][[s]]),]
+      })
+    })
+  
+} else {
+  summary.stats <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      compute_gene_summary_stats(filtered.samples$log2.tmm.cpm.gf[[t]])
+    })
+  
+  # Remove top and bottom x% of genes by expression level
+  summary.stats <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+        summary.stats[[t]][
+          summary.stats[[t]]$Rank_Mean>params$min.percentile &
+            summary.stats[[t]]$Rank_Mean<params$max.percentile,]
+    })
+}
+```
+
+### Plots {.tabset}
+
+#### SD x Mean
+```{r plot-sd-vs-mean}
+plot_sd_vs_mean(summary.stats, filtered.samples$metadata)
+```
+
+#### Log2 SD x Mean
+```{r plot-log2sd-vs-mean}
+plot_sd_vs_mean(summary.stats, filtered.samples$metadata, log2=TRUE)
+```
+
+#### CV vs Mean
+```{r plot-cv2-vs-mean}
+plot_cv_vs_mean(summary.stats, filtered.samples$metadata, log2=FALSE)
+```
+
+#### Log2 (CV^2) vs Mean
+```{r plot-log2-cv2-vs-mean}
+plot_cv_vs_mean(summary.stats, filtered.samples$metadata, log2=TRUE)
+```
+
+## Jackknife
+
+### Summarized results
+```{r retrieve-summarized-jackknife-results}
+# Adjusted SD
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  jack.adj.sd.summary <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(jack.adj.sd[[t]][[s]])) { 
+          jack.adj.sd[[t]][[s]]$summary %>%
+            tibble::rownames_to_column(., var="GeneID")
+        }
+      })
+    })
+} else { 
+  jack.adj.sd.summary <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      jack.adj.sd[[t]]$summary %>%
+        tibble::rownames_to_column(., var="GeneID")
+      })
+}
+
+# Residual SD
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  jack.resid.sd.summary <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(jack.resid.sd[[t]][[s]])) { 
+          jack.resid.sd[[t]][[s]]$summary %>%
+            tibble::rownames_to_column(., var="GeneID")
+        }
+      })
+    })
+} else { 
+  jack.resid.sd.summary <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      jack.resid.sd[[t]]$summary %>%
+        tibble::rownames_to_column(., var="GeneID")
+      })
+}
+
+# Residual CV
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  jack.resid.cv.summary <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(jack.resid.cv[[t]][[s]])) { 
+          jack.resid.cv[[t]][[s]]$summary %>%
+            tibble::rownames_to_column(., var="GeneID")
+        }
+      })
+    })
+} else { 
+  jack.resid.cv.summary <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      jack.resid.cv[[t]]$summary %>%
+        tibble::rownames_to_column(., var="GeneID")
+      })
+}
+```
+
+### Plots {.tabset} 
+
+#### Log2 SD x Mean
+```{r plot-jackknife-log2sd-vs-mean}
+plot_jackknife_log2sd_vs_mean(jack.resid.sd.summary, filtered.samples$metadata)
+```
+
+#### Log2 CV x Mean
+```{r plot-jackknife-log2cv-vs-mean}
+plot_jackknife_log2cv_vs_mean(jack.resid.cv.summary, filtered.samples$metadata)
+```
+
+
+#### Adjusted SD x Mean
+```{r plot-jackknife-adj-sd-vs-mean}
+plot_jackknife_adj_sd_vs_mean(jack.adj.sd.summary, filtered.samples$metadata)
+```
+
+#### Residual log2 SD x Mean
+```{r plot-jackknife-residual-log2sd-vs-mean}
+plot_jackknife_resid_var_vs_mean(jack.resid.sd.summary, filtered.samples$metadata, method="sd")
+```
+
+#### Residual log2 CV x Mean
+```{r plot-jackknife-residual-log2cv-vs-mean}
+plot_jackknife_resid_var_vs_mean(jack.resid.cv.summary, filtered.samples$metadata, method="cv")
+```
+
+#### Global variability rank - based on residual log2 CV
+```{r plot-jackknife-global-rank-log2cv-vs-mean}
+# Based on percentile rank of residual log2(CV^2) across the range of expression levels
+plot_jackknife_global_var_rank_vs_mean(jack.resid.cv.summary, filtered.samples$metadata, method="cv")
+```
+
+#### Local variability rank - based on residual log2 CV
+```{r plot-jackknife-local-rank-log2cv-vs-mean}
+# Based on mean percentile rank of residual log2(CV^2) within sliding windows of genes with similar expression levels
+plot_jackknife_local_var_rank_vs_mean(jack.resid.cv.summary, filtered.samples$metadata, method="cv")
+```
+
+## Protein-coding vs lncRNA
+
+### Split by gene biotype
+```{r split-by-biotype}
+jack.resid.cv.biotype <- list()
+
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  jack.resid.cv.biotype$coding <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        jack.resid.cv[[t]][[s]]$summary[
+          rownames(jack.resid.cv[[t]][[s]]$summary) %in%
+            biotype$Gene.stable.ID[biotype$Gene.type=="protein_coding"],]
+    })
+  })
+  
+  jack.resid.cv.biotype$lncrna <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        jack.resid.cv[[t]][[s]]$summary[
+          rownames(jack.resid.cv[[t]][[s]]$summary) %in% 
+            biotype$Gene.stable.ID[biotype$Gene.type %in% c("lncRNA", "lincRNA")],]
+    })
+  })  
+} else {
+  jack.resid.cv.biotype$coding <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      jack.resid.cv[[t]]$summary[
+        rownames(jack.resid.cv[[t]]$summary) %in%
+          biotype$Gene.stable.ID[biotype$Gene.type=="protein_coding"],]
+  })    
+
+  jack.resid.cv.biotype$lncrna <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      jack.resid.cv[[t]]$summary[
+        rownames(jack.resid.cv[[t]]$summary) %in%
+          biotype$Gene.stable.ID[biotype$Gene.type %in% c("lncRNA", "lincRNA")],]
+  })   
+}
+```
+
+### Bind jackknife results across all conditions
+```{r bind-summarized-jackknife-results}
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  jack.resid.cv.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(jack.resid.cv[[t]][[s]])) { 
+          jack.resid.cv[[t]][[s]]$summary %>%
+            tibble::rownames_to_column(., var="GeneID")
+          }
+        }) %>%
+        dplyr::bind_rows(.id="Sex")
+      }) %>%
+    dplyr::bind_rows(.id="Tissue")
+} else { 
+  jack.resid.cv.bind <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      jack.resid.cv[[t]]$summary %>%
+        tibble::rownames_to_column(., var="GeneID")
+      }) %>%
+    dplyr::bind_rows(.id="Tissue")
+} 
+
+jack.resid.cv.bind <- jack.resid.cv.bind %>%
+  dplyr::inner_join(biotype[,-1], by=c("GeneID"="Gene.stable.ID"))
+colnames(jack.resid.cv.bind)[ncol(jack.resid.cv.bind)] <- "Biotype"
+
+jack.resid.cv.bind <- 
+  jack.resid.cv.bind[jack.resid.cv.bind$Biotype %in% c("protein_coding", "lncRNA", "lincRNA"),]
+```
+
+### Compare variability rank distribution of protein-coding genes and lncRNA
+```{r plot-ev-boxplot-lncrna-vs-coding, fig.width = 10, fig.height = 8}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  boxplot_var_rank_lncrna_vs_coding(jack.resid.cv.bind, sex=TRUE, method="cv")  
+} else {
+  boxplot_var_rank_lncrna_vs_coding(jack.resid.cv.bind, sex=FALSE, method="cv")
+}
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+if (!params$all.nonzero.matrix) {
+  saveRDS(jack.resid.cv.bind,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
+  
+  saveRDS(jack.resid.cv.summary,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "jack.resid.cv.summary.rds", sep="_")))
+  
+  saveRDS(jack.resid.cv.biotype,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "jack.resid.cv.biotype.rds", sep="_")))  
+} else {
+  saveRDS(jack.resid.cv.bind,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "jack.resid.cv.bind.nonzero.rds", sep="_")))
+  
+  saveRDS(jack.resid.cv.summary,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "jack.resid.cv.summary.nonzero.rds", sep="_")))
+  
+  saveRDS(jack.resid.cv.biotype,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "jack.resid.cv.biotype.nonzero.rds", sep="_")))   
+}
+```

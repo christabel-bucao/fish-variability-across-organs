@@ -1,0 +1,384 @@
+---
+title: "Selection analysis (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  selectome.path: "../../data/selectome"
+  input.samples.rds.path: "../../results/01_Filter_Samples"
+  input.variability.rds.path: "../../results/03_Variability_Plots"
+  output.rds.path: "../../results/08_Selection"
+  species: "DRE"
+  species.name: "Danio rerio"
+  ev.percentile: 0.20
+  set.seed: 12345
+  n.permutations: 2000
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/selection.R")
+source("../functions/selection_plots.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Expression levels
+```{r import-expression-levels}
+# Load saved data from 01_Filter_Samples.Rmd
+# Normalized within-condition
+filtered.samples <- readRDS(
+  file.path(params$input.samples.rds.path,
+            paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+```
+
+### Expression variability
+```{r import-variability}
+# Load processed expression variability estimates from 03_Variability_Plots.Rmd
+jack.summary <- readRDS(
+  file.path(params$input.variability.rds.path,
+            paste(params$species, "jack.resid.cv.summary.rds", sep="_")))
+```
+
+### Selectome
+```{r import-selectome-dnds}
+# Load dN/dS results from Selectome
+selectome <- 
+  read.delim(file.path(
+    params$selectome.path, 
+    paste(params$species, "protein_coding_Ensembl_105.res.txt", sep="_")),
+    sep="\t")
+colnames(selectome) <- c("GeneID", "TaxID", "Taxon", "qvalue", "LRT", "omega0", "omega2")
+```
+
+# Main {.tabset}
+
+## Gene expression variability across conditions
+
+### Merge variability rank
+```{r merge-ev-rank}
+ev.rank <- 
+  merge_ev_rank(jack.summary, filtered.samples$metadata, by="local", join="full", method="cv")
+```
+
+### Classify genes as low, high, or mid variability (LV, HV, MV) based on percentile cutoff
+```{r classify-ev}
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  ev.tally <- vector(mode="list",3)
+  names(ev.tally) <- c("all","F","M")
+
+  ev.tally$all <- 
+    tally_ev(ev.rank, 
+             ev.percentile=params$ev.percentile, output="all")
+  ev.tally$F <- 
+    tally_ev(ev.rank[,grepl("_F",colnames(ev.rank))], 
+             ev.percentile=params$ev.percentile, output="all")
+  ev.tally$M <- 
+    tally_ev(ev.rank[,grepl("_M",colnames(ev.rank))], 
+             ev.percentile=params$ev.percentile, output="all")
+} else {
+  ev.tally <- 
+    tally_ev(ev.rank,
+             ev.percentile=params$ev.percentile, output="all")
+}
+```
+
+Criteria:
+(1) Consider only genes with variability data in at least n.conditions
+(2) Classify genes as pan-LV (or HV, MV) if it is LV (HV, MV) in more than half of conditions
+```{r classify-pan-ev}
+ev.cat <- c("LV"="LV","MV"="MV","HV"="HV","Bgd"="Bgd")
+n.conditions <- floor(nrow(filtered.samples$conditions)/2 + 1)
+
+# The background gene set includes genes which satisfy (1) but not necessarily (2)
+
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  ev.tally.sort <- lapply(ev.cat, function(ev) {
+    if (ev=="Bgd") { 
+      ev.tally$all$values[ev.tally$all$values$N_Conditions>=n.conditions,] 
+    }
+    else { 
+      ev.tally$all$values[
+        ev.tally$all$values$N_Conditions>=n.conditions &
+          ev.tally$all$values[[paste(ev, "Ratio", sep="_")]]>0.5,] }
+  })  
+} else {
+  ev.tally.sort <- lapply(ev.cat, function(ev) {
+    if (ev=="Bgd") { 
+      ev.tally$values[ev.tally$values$N_Conditions>=n.conditions,] 
+    }
+    else { 
+      ev.tally$values[
+        ev.tally$values$N_Conditions>=n.conditions &
+          ev.tally$values[[paste(ev, "Ratio", sep="_")]]>0.5,] }
+  })
+}
+```
+
+## Selection analysis
+
+### Filter Selectome results
+
+#### Remove GeneID - Taxon duplicates from Selectome results
+
+GeneID - Taxon duplicated rows may be due to uncertainties in the gene tree
+```{r remove-selectome-duplicates}
+# No duplicated rows
+selectome.uniq <-
+  dplyr::distinct(selectome, GeneID, TaxID, Taxon, .keep_all=TRUE)
+```
+
+#### Subset Selectome results by gene lists
+```{r subset-selectome-results}
+selectome.sub <- lapply(ev.cat, function(ev) {
+  dplyr::filter(selectome.uniq, GeneID %in% rownames(ev.tally.sort[[ev]]))
+})
+
+selectome.sub.bind <-
+  dplyr::bind_rows(selectome.sub[c("LV","MV","HV")], .id="EV")
+
+selectome.sub.bind$EV <- 
+  factor(selectome.sub.bind$EV, levels=c("LV","MV","HV"), labels=c("low","mid","high"))
+
+# Branches
+print(levels(as.factor(selectome.sub$Bgd$Taxon)))
+```
+
+### Purifying selection
+```{r boxplot-omega0, fig.width=8, fig.height=10}
+boxplot_omega0(selectome.sub.bind, title=params$species.name)
+boxplot_omega0(selectome.sub.bind, compare.means=TRUE, title=params$species.name)
+```
+
+### Positive selection
+
+#### Observed proportion of branches under positive selection (q-value < 0.05)
+```{r positive-selection-enrichment}
+selectome.enrichment <- data.frame(
+  "Category"=ev.cat,
+  "Selection_Yes"=rep(NA,length(ev.cat)),
+  "Selection_No"=rep(NA,length(ev.cat)),
+  "Proportion"=rep(NA,length(ev.cat)),
+  "Enrichment"=rep(NA,length(ev.cat))
+)
+
+for (ev in ev.cat[length(ev.cat):1]) {
+  selectome.enrichment[ev,"Selection_Yes"] <- sum(selectome.sub[[ev]]$qvalue<0.05)
+  selectome.enrichment[ev,"Selection_No"] <- sum(selectome.sub[[ev]]$qvalue>=0.05)
+  selectome.enrichment[ev,"Proportion"] <-
+    sum(selectome.sub[[ev]]$qvalue<0.05) / nrow(selectome.sub[[ev]])
+  selectome.enrichment[ev,"Enrichment"] <-
+    selectome.enrichment[ev,"Proportion"] /
+    (sum(selectome.sub[["Bgd"]]$qvalue<0.05) / nrow(selectome.sub[["Bgd"]]))
+}
+```
+
+```{r}
+print(selectome.enrichment)
+```
+
+#### Chi-squared contingency table
+```{r positive-selection-chisq}
+selectome.chisq.table <- selectome.enrichment[c("LV","MV","HV"),c("Selection_Yes","Selection_No")]
+
+selectome.chisq.test <- chisq.test(selectome.chisq.table)
+selectome.chisq.test
+```
+
+```{r}
+selectome.chisq.test$observed
+selectome.chisq.test$expected
+```
+
+#### Permutation test
+
+##### Permute q-value
+```{r permute-qvalue}
+selectome.perm <- vector(mode="list", length=params$n.permutations)
+
+set.seed(params$set.seed)
+
+for (i in 1:params$n.permutations) {
+  selectome.perm[[i]] <- selectome.sub$Bgd
+  selectome.perm[[i]]$qvalue <- sample(selectome.perm[[i]]$qvalue)
+}
+```
+
+##### Subset by gene lists
+```{r subset-gene-lists-permutation}
+selectome.perm.sub <- vector(mode="list", length=params$n.permutations)
+
+for (i in 1:params$n.permutations) {
+  selectome.perm.sub[[i]] <- lapply(ev.cat, function(ev) {
+    dplyr::filter(selectome.perm[[i]], GeneID %in% rownames(ev.tally.sort[[ev]]))
+  })
+}
+```
+
+##### Proportion of branches under positive selection
+```{r positive-selection-enrichment-permutation}
+selectome.perm.enrichment <- vector(mode="list", length=3)
+names(selectome.perm.enrichment) <- c("LV","MV","HV")
+
+for (ev in c("LV","MV","HV")) {
+  selectome.perm.enrichment[[ev]] <- data.frame(
+    "Selection_Yes"=rep(NA, params$n.permutations),
+    "Selection_No"=rep(NA, params$n.permutations),
+    "Proportion"=rep(NA, params$n.permutations),
+    "Enrichment"=rep(NA, params$n.permutations),
+    "PercentRank"=rep(NA, params$n.permutations)
+  )
+  
+  for (i in 1:params$n.permutations) {
+    selectome.perm.enrichment[[ev]][i,"Selection_Yes"] <- sum(selectome.perm.sub[[i]][[ev]]$qvalue<0.05)
+    selectome.perm.enrichment[[ev]][i,"Selection_No"] <- sum(selectome.perm.sub[[i]][[ev]]$qvalue>=0.05)
+    selectome.perm.enrichment[[ev]][i,"Proportion"] <- 
+      sum(selectome.perm.sub[[i]][[ev]]$qvalue<0.05) / nrow(selectome.perm.sub[[i]][[ev]])
+    
+    selectome.perm.enrichment[[ev]][i,"Enrichment"] <-
+      selectome.perm.enrichment[[ev]][i,"Proportion"] / 
+      (sum(selectome.perm.sub[[i]][["Bgd"]]$qvalue<0.05) / nrow(selectome.perm.sub[[i]][["Bgd"]]))
+  }
+  
+  selectome.perm.enrichment[[ev]][,"PercentRank"] <- 
+    dplyr::percent_rank(selectome.perm.enrichment[[ev]]$Enrichment)
+}
+```
+
+##### Compute p-value
+
+Null hypothesis: 
+- Expression variability has no association with positive selection.
+- For each expression variability category, the proportion of gene - branches under positive selection is the same as the background proportion. (Enrichment = 1)
+
+Alternative hypothesis:
+- Expression variability is associated with positive selection (in either direction)
+
+###### Lowly variable genes
+```{r compute-pvalue-lv}
+# Observed enrichment of gene - branches under positive selection
+print(paste("Observed =", round(selectome.enrichment["LV","Enrichment"],3)))
+
+# From the permutation test, how many runs have enrichment equal to or lower than this value?
+sum(selectome.perm.enrichment$LV$Enrichment<=selectome.enrichment["LV","Enrichment"])
+
+# Two-tailed p-value
+## If the proportion is the same as the background, we expect Enrichment = 1
+## From the permutation test, how many runs have enrichment more extreme than the observed value?
+diff.cutoff <- rep(NA,3)
+names(diff.cutoff) <- c("LV","MV","HV")
+
+diff.cutoff[["LV"]] <- abs(1.0 - selectome.enrichment["LV","Enrichment"])
+
+## If p-value = 0, it is at least p < (1/n.permutations)
+perm.pvalue <- rep(NA,3)
+names(perm.pvalue) <- c("LV","MV","HV")
+
+perm.pvalue[["LV"]] <- 
+  sum(abs(1.0 - selectome.perm.enrichment$LV$Enrichment)>=diff.cutoff[["LV"]]) / params$n.permutations
+
+print(paste("p =", perm.pvalue[["LV"]]))
+```
+
+###### Highly variable genes
+```{r compute-pvalue-hv}
+# Observed enrichment of gene - branches under positive selection
+print(paste("Observed =", round(selectome.enrichment["HV","Enrichment"],3)))
+
+# From the permutation test, how many runs have enrichment equal to or lower than this value?
+sum(selectome.perm.enrichment$HV$Enrichment<=selectome.enrichment["HV","Enrichment"])
+
+# Two-tailed p-value
+## If the proportion is the same as the background, we expect Enrichment = 1
+## From the permutation test, how many runs have enrichment more extreme than the observed value?
+diff.cutoff[["HV"]] <- abs(1.0 - selectome.enrichment["HV","Enrichment"])
+
+## If p-value = 0, it is at least p < (1/n.permutations)
+perm.pvalue[["HV"]] <- 
+  sum(abs(1.0 - selectome.perm.enrichment$HV$Enrichment)>=diff.cutoff[["HV"]]) / params$n.permutations
+
+print(paste("p =", perm.pvalue[["HV"]]))
+```
+
+###### Moderately variable genes
+```{r compute-pvalue-mv}
+# Observed enrichment of gene - branches under positive selection
+print(paste("Observed =", round(selectome.enrichment["MV","Enrichment"],3)))
+
+# From the permutation test, how many runs have enrichment equal to or lower than this value?
+sum(selectome.perm.enrichment$MV$Enrichment<=selectome.enrichment["MV","Enrichment"])
+
+# Two-tailed p-value
+## If the proportion is the same as the background, we expect Enrichment = 1
+## From the permutation test, how many runs have enrichment more extreme than the observed value?
+diff.cutoff[["MV"]] <- abs(1.0 - selectome.enrichment["MV","Enrichment"])
+
+## If p-value = 0, it is at least p < (1/n.permutations)
+perm.pvalue[["MV"]] <- 
+  sum(abs(1.0 - selectome.perm.enrichment$MV$Enrichment)>=diff.cutoff[["MV"]]) / params$n.permutations
+
+print(paste("p =", perm.pvalue[["MV"]]))
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+# Variability rank categories
+saveRDS(ev.tally,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "ev.tally.rds", sep="_")))
+
+saveRDS(ev.tally.sort,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "ev.tally.sort.rds", sep="_")))
+
+# Filtered Selectome results
+saveRDS(selectome.sub,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selectome.sub.rds", sep="_")))
+
+saveRDS(selectome.sub.bind,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selectome.sub.bind.rds", sep="_")))
+
+# Positive selection
+saveRDS(selectome.enrichment,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selectome.enrichment.rds", sep="_")))
+
+saveRDS(selectome.chisq.test,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selectome.chisq.test.rds", sep="_")))
+
+# Permutation test
+saveRDS(selectome.perm.sub,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selectome.perm.sub.rds", sep="_")))
+
+saveRDS(selectome.perm.enrichment,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selectome.perm.enrichment.rds", sep="_")))
+
+saveRDS(perm.pvalue,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "perm.pvalue.rds", sep="_")))
+```
+
