@@ -1,6 +1,5 @@
 # Ignore directories
 /bin/
-/results/
 /data/fastq/
 /docs/
 /trash/
@@ -9,6 +8,8 @@
 
 # Ignore files
 .DS_Store
+.Rhistory
+.Rprofile
 *.xlsx
 *.docx
 *.rds
