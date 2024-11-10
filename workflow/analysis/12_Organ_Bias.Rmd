@@ -1,0 +1,849 @@
+---
+title: "Variability of organ-biased genes (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.variability.rds.path: "../../results/03_Variability_Plots"
+  input.tau.rds.path: "../../results/10_Expression_Specificity"
+  output.rds.path: "../../results/12_Organ_Bias"
+  species: "DRE"
+  species.name: "Danio rerio"
+  tau.cutoff: 0.30
+  all.nonzero.matrix: FALSE
+  randomized.mean.expr: FALSE
+  seed.run: 12345
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/helper_functions.R")
+source("../functions/expression_specificity_plots.R")
+source("../functions/organ_bias.R")
+source("../functions/organ_bias_plots.R")
+#source("../functions/annotate_boxplots.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Organ expression specificity (tau)
+```{r import-tau}
+# Load expression specificity computations from 10_Expression_Specificity.Rmd
+## Conditions available in all species
+if (!params$all.nonzero.matrix) {
+  if (!params$randomized.mean.expr) {
+    filtered.samples <- readRDS(
+      file.path(params$input.tau.rds.path,
+                paste(params$species, "filtered.samples.common.rds", sep="_")))     
+  } else {
+    filtered.samples <- readRDS(
+      file.path(params$input.tau.rds.path,
+                paste(params$species, "filtered.samples.common", 
+                      paste0("rnd", params$seed.run, ".rds"), sep="_"))) 
+  }
+ 
+} else {
+  if (!params$randomized.mean.expr) {
+    filtered.samples <- readRDS(
+      file.path(params$input.tau.rds.path,
+                paste(params$species, "filtered.samples.common.nonzero.rds", sep="_")))      
+  } else {
+    filtered.samples <- readRDS(
+      file.path(params$input.tau.rds.path,
+                paste(params$species, "filtered.samples.common.nonzero", 
+                      paste0("rnd", params$seed.run, ".rds"), sep="_")))     
+  }
+}
+
+filtered.samples$conditions <- split_gonads_df(filtered.samples$conditions)
+expr.rank.first <- filtered.samples$expr.rank.first
+```
+
+### Expression variability
+```{r import-variability}
+# Load processed expression variability estimates from 03_Variability_Plots.Rmd
+if (!params$all.nonzero.matrix) {
+  expr.var <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.cv.bind.rds", sep="_"))) 
+} else {
+  expr.var <- readRDS(
+    file.path(params$input.variability.rds.path,
+              paste(params$species, "jack.resid.cv.bind.nonzero.rds", sep="_"))) 
+}
+
+expr.var <- split_gonads_df(expr.var)
+
+# Retain only conditions included in expression specificity computations
+expr.var.common <- expr.var %>%
+  dplyr::filter(Tissue %in% filtered.samples$conditions$Tissue)
+```
+
+# Main {.tabset}
+
+## Expression specificity (tau)
+
+### Plot - Tau distribution
+
+#### All genes with tau
+```{r plot-tau-distribution-all-genes}
+if (!params$all.nonzero.matrix) {
+  plot_tau_distribution(filtered.samples$tau,
+                        tau.low=params$tau.cutoff, tau.high=params$tau.cutoff,
+                        ylim=c(0.0,1.5))  
+} else {
+  plot_tau_distribution(filtered.samples$tau,
+                        tau.low=params$tau.cutoff, tau.high=params$tau.cutoff,
+                        ylim=c(0.0,3.6))    
+}
+```
+
+#### With tau and expression variability data
+```{r plot-tau-distribution-genes-with-variability-data}
+tau.with.var <- 
+  filtered.samples$tau[names(filtered.samples$tau) %in% levels(as.factor(expr.var.common$GeneID))]
+
+if (!params$all.nonzero.matrix) {
+  plot_tau_distribution(tau.with.var,
+                        tau.low=params$tau.cutoff, tau.high=params$tau.cutoff,
+                        ylim=c(0.0,1.5))    
+} else {
+  plot_tau_distribution(tau.with.var,
+                        tau.low=params$tau.cutoff, tau.high=params$tau.cutoff,
+                        ylim=c(0.0,3.6))    
+}
+```
+
+## Variability as a function of tau
+
+### Reorder organs for plotting
+```{r reorder-conditions}
+expr.var.rank.common <- expr.var.common %>%
+  dplyr::inner_join(expr.rank.first, by="GeneID")
+
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  levels.order <- 
+    c("brain","eye","intestine","liver",
+      "heart","muscle","gills","pectoral_fin",
+      "ovary","testis")
+} else {
+  levels.order <-
+    c("brain","eye","intestine","liver",
+      "heart","muscle","gills","pectoral_fin","gonads")  
+}
+
+# Exclude missing conditions from factor levels
+levels.exclude <- setdiff(levels.order, levels(as.factor(expr.var.rank.common$Tissue)))
+
+# Reorder levels for plotting
+expr.var.rank.common$Tissue <-
+  factor(expr.var.rank.common$Tissue, levels=levels.order, exclude=levels.exclude)
+```
+
+
+### Density plots
+
+#### Variability rank vs. mean expression
+```{r density-plot-variability-vs-mean, fig.width=20, fig.height=10}
+density_plot_variability_vs_mean(expr.var.rank.common, title=params$species.name)
+```
+
+#### Mean expression vs. tau
+```{r density-plot-mean-vs-tau, fig.width=20, fig.height=10}
+density_plot_mean_vs_tau(expr.var.rank.common, title=params$species.name)
+```
+
+#### Residual variation vs. tau
+```{r density-plot-residual-variation-vs-tau, fig.width=20, fig.height=10}
+density_plot_resid_var_vs_tau(expr.var.rank.common, title=params$species.name)
+```
+
+#### Variability rank vs. tau
+```{r density-plot-variability-vs-tau, fig.width=20, fig.height=10}
+density_plot_variability_vs_tau(expr.var.rank.common, title=params$species.name)
+```
+
+### Boxplots by tau quantiles
+
+#### Split by tau quantiles
+```{r tau-quantiles}
+tau.with.var.quantiles <- quantile(tau.with.var)
+
+expr.var.rank.common$Quantile <-
+  apply(expr.var.rank.common, MARGIN=1, function(r) {
+    if (r[["tau"]] <= tau.with.var.quantiles["25%"]) { "Q1" }
+    else if (r[["tau"]] <= tau.with.var.quantiles["50%"]) { "Q2" }
+    else if (r[["tau"]] <= tau.with.var.quantiles["75%"]) { "Q3" }
+    else { "Q4" }
+  })
+
+print(tau.with.var.quantiles)  
+```
+
+
+#### Mean expression
+```{r boxplot-mean-expression-tau-quantiles, fig.width=20, fig.height=10}
+boxplot_mean_by_tau_quantiles(expr.var.rank.common, title=species.name)
+```
+
+#### Residual variation
+```{r boxplot-resid-var-tau-quantiles, fig.width=20, fig.height=10}
+boxplot_resid_var_by_tau_quantiles(expr.var.rank.common, title=species.name)
+```
+
+#### Variability rank
+```{r boxplot-variability-tau-quantiles, fig.width=20, fig.height=10}
+boxplot_variability_by_tau_quantiles(expr.var.rank.common, title=species.name)
+```
+
+## Variability of organ-biased genes
+
+### Classify broadly expressed and organ-biased genes (with subsets)
+```{r classify-genes-by-organ-bias}
+Tissue <- as.factor(expr.var.rank.common$Tissue)
+
+# Per organ, classify genes by organ bias
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  expr.var.bias.by.condition <- vector(mode="list", length=2)
+  names(expr.var.bias.by.condition) <- c("F","M")
+  
+  for (s in c("F","M")) {
+    expr.var.bias.by.condition[[s]] <- vector(mode="list", length=length(levels(Tissue)))
+    names(expr.var.bias.by.condition[[s]]) <- levels(Tissue)
+    
+    for (t in levels(Tissue)) {
+      expr.var.bias.by.condition[[s]][[t]] <- expr.var.rank.common %>%
+        dplyr::filter(Sex==s) %>%
+        dplyr::filter(Tissue!=t) %>%
+        classify_genes_by_organ_bias(tau.cutoff=params$tau.cutoff)
+      
+      # Reorder factor levels
+      expr.var.bias.by.condition[[s]][[t]]$TissueBias <-
+        factor(expr.var.bias.by.condition[[s]][[t]]$TissueBias, levels=c("broad","focal",t,"other"))
+    }
+  }
+} else {
+  expr.var.bias.by.condition <- vector(mode="list", length=length(levels(Tissue)))
+  names(expr.var.bias.by.condition) <- levels(Tissue)  
+  
+  for (t in levels(Tissue)) {
+    expr.var.bias.by.condition[[t]] <- expr.var.rank.common %>%
+      dplyr::filter(Tissue!=t) %>%
+      classify_genes_by_organ_bias(tau.cutoff=params$tau.cutoff)
+  
+  # Reorder factor levels
+    expr.var.bias.by.condition[[t]]$TissueBias <-
+      factor(expr.var.bias.by.condition[[t]]$TissueBias, levels=c("broad","focal",t,"other"))    
+  }
+}
+```
+
+### Boxplots by organ bias {.tabset}
+
+#### Mean expression
+```{r boxplot-mean-expression-organ-bias, fig.width=18, fig.height=10}
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  for (s in c("F","M")) {
+    for (t in levels(Tissue)) {
+      print(boxplot_mean_by_organ_bias(expr.var.bias.by.condition[[s]][[t]], 
+                                       species=params$species, tissue=t, sex=s))
+    }
+  }
+} else {
+  for (t in levels(Tissue)) { 
+    print(boxplot_mean_by_organ_bias(expr.var.bias.by.condition[[t]],
+                                     species=params$species, tissue=t))    
+    }
+}
+```
+
+#### Residual variation
+```{r boxplot-resid-var-organ-bias, fig.width=18, fig.height=10}
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  for (s in c("F","M")) {
+    for (t in levels(Tissue)) {
+      print(boxplot_resid_var_by_organ_bias(expr.var.bias.by.condition[[s]][[t]], 
+                                            species=params$species, tissue=t, sex=s))
+    }
+  }
+} else {
+  for (t in levels(Tissue)) {
+    print(boxplot_resid_var_by_organ_bias(expr.var.bias.by.condition[[t]],
+                                          species=params$species, tissue=t))    
+  }
+}
+```
+
+#### Variability rank
+```{r boxplot-variability-organ-bias, fig.width=18, fig.height=10}
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  for (s in c("F","M")) {
+    for (t in levels(Tissue)) {
+      print(boxplot_variability_by_organ_bias(expr.var.bias.by.condition[[s]][[t]], 
+                                              species=params$species, tissue=t, sex=s))
+    }
+  }
+} else {
+  for (t in levels(Tissue)) {
+    print(boxplot_variability_by_organ_bias(expr.var.bias.by.condition[[t]],
+                                          species=params$species, tissue=t))    
+  }
+
+}
+```
+
+#### Supplementary
+
+##### Brain-biased genes
+```{r boxplot-variability-brain-bias, fig.width=20, fig.height=10}
+bias <- "brain"
+
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  expr.var.brain.bias <- 
+    dplyr::bind_rows(expr.var.bias.by.condition[["F"]][[bias]], expr.var.bias.by.condition[["M"]][[bias]])
+  
+} else {
+  expr.var.brain.bias <- expr.var.bias.by.condition[[bias]]
+}
+
+# Same, just different colors
+if (params$randomized.mean.expr) {
+  boxplot_variability_example(expr.var.brain.bias, tissue=bias, species=params$species.name, color="#FFFAFA")
+} else {
+  boxplot_variability_example(expr.var.brain.bias, tissue=bias, species=params$species.name, color="#67005D")
+  boxplot_variability_example(expr.var.brain.bias, tissue=bias, species=params$species.name, color="#00BFC4")    
+}
+```
+
+##### Liver-biased genes
+```{r boxplot-variability-liver-bias, fig.width=20, fig.height=10}
+bias <- "liver"
+
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  expr.var.liver.bias <- 
+    dplyr::bind_rows(expr.var.bias.by.condition[["F"]][[bias]], expr.var.bias.by.condition[["M"]][[bias]])
+  
+} else {
+  expr.var.liver.bias <- expr.var.bias.by.condition[[bias]]
+}
+
+# Same, just different colors
+if (params$randomized.mean.expr) {
+  boxplot_variability_example(expr.var.liver.bias, tissue=bias, species=params$species.name, color="#FFFAFA")  
+} else {
+  boxplot_variability_example(expr.var.liver.bias, tissue=bias, species=params$species.name, color="#FF8A00")
+  boxplot_variability_example(expr.var.liver.bias, tissue=bias, species=params$species.name, color="#F8766D")  
+}
+```
+
+##### Ovary- or gonads-biased genes
+```{r boxplot-variability-ovary-bias, fig.width=20, fig.height=10}
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  bias <- "ovary"
+  expr.var.ovary.bias <- 
+    dplyr::bind_rows(expr.var.bias.by.condition[["F"]][[bias]], expr.var.bias.by.condition[["M"]][[bias]])
+  
+  if (params$randomized.mean.expr) {
+    boxplot_variability_example(expr.var.ovary.bias, tissue=bias, species=params$species.name, color="#FFFAFA")
+  } else {
+    boxplot_variability_example(expr.var.ovary.bias, tissue=bias, species=params$species.name, color="#67005D")
+    boxplot_variability_example(expr.var.ovary.bias, tissue=bias, species=params$species.name, color="#00BFC4")    
+  }
+  
+} else {
+  bias <- "gonads"
+  expr.var.gonads.bias <- expr.var.bias.by.condition[[bias]]
+  
+  if (params$randomized.mean.expr) {
+    boxplot_variability_example(expr.var.gonads.bias, tissue=bias, species=params$species.name, color="#FFFAFA")
+  } else {
+    boxplot_variability_example(expr.var.gonads.bias, tissue=bias, species=params$species.name, color="#67005D")
+    boxplot_variability_example(expr.var.gonads.bias, tissue=bias, species=params$species.name, color="#00BFC4")    
+  }
+}
+```
+
+#### Examples
+
+##### Brain-biased genes expressed in the pectoral fin
+```{r brain-biased-in-pectoral-fin, fig.width=3.5, fig.height=5}
+bias <- "brain"
+focal <- "pectoral_fin"
+  
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  sex <- "F"
+  brain.biased.in.pecfin <- 
+    expr.var.bias.by.condition[[sex]][[bias]] %>%
+    dplyr::filter(Tissue==focal)
+
+} else {
+  brain.biased.in.pecfin <- 
+    expr.var.bias.by.condition[[bias]] %>%
+    dplyr::filter(Tissue==focal)
+  
+}
+
+if (params$randomized.mean.expr) {
+  print(boxplot_variability_example(
+    brain.biased.in.pecfin, species=params$species.name, tissue=bias, ylab="Variability rank", color="#FFFAFA"))    
+} else {
+  print(boxplot_variability_example(
+    brain.biased.in.pecfin, species=params$species.name, tissue=bias, ylab="Variability rank", color="#67005D"))
+    
+  print(boxplot_variability_example(
+    brain.biased.in.pecfin, species=params$species.name, tissue=bias, ylab="Variability rank", color="#00BFC4"))    
+}
+```
+
+
+##### Liver-biased genes expressed in the intestine
+```{r liver-biased-in-intestine, fig.width=3.5, fig.height=5}
+bias <- "liver"
+focal <- "intestine"
+  
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  sex <- "F"
+  liver.biased.in.intestine <- 
+    expr.var.bias.by.condition[[sex]][[bias]] %>%
+    dplyr::filter(Tissue==focal)
+
+} else {
+  liver.biased.in.intestine <- 
+    expr.var.bias.by.condition[[bias]] %>%
+    dplyr::filter(Tissue==focal)
+    
+}
+
+if (params$randomized.mean.expr) {
+  print(boxplot_variability_example(
+    liver.biased.in.intestine, species=params$species.name, tissue=bias, ylab="Variability rank", color="#FFFAFA"))    
+} else {
+  print(boxplot_variability_example(
+    liver.biased.in.intestine, species=params$species.name, tissue=bias, ylab="Variability rank", color="#FF8A00"))
+  
+  print(boxplot_variability_example(
+    liver.biased.in.intestine, species=params$species.name, tissue=bias, ylab="Variability rank", color="#F8766D"))    
+}
+```
+
+
+##### Ovary-biased (or gonads-biased) genes expressed in the eye
+```{r gonads-biased-in-eye, fig.width=3.5, fig.height=5}
+focal <- "eye"
+  
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  bias <- "ovary"
+  sex <- "F"
+  ovary.biased.in.eye <- 
+    expr.var.bias.by.condition[[sex]][[bias]] %>%
+    dplyr::filter(Tissue==focal)
+  
+  if (params$randomized.mean.expr) {
+    print(boxplot_variability_example(
+      ovary.biased.in.eye, species=params$species.name, tissue=bias, ylab="Variability rank", color="#FFFAFA"))      
+  } else {
+    print(boxplot_variability_example(
+      ovary.biased.in.eye, species=params$species.name, tissue=bias, ylab="Variability rank", color="#67005D"))
+  
+    print(boxplot_variability_example(
+      ovary.biased.in.eye, species=params$species.name, tissue=bias, ylab="Variability rank", color="#00BFC4"))     
+  }
+  
+} else {
+  bias <- "gonads"
+  gonads.biased.in.eye <- 
+    expr.var.bias.by.condition[[bias]] %>%
+    dplyr::filter(Tissue==focal)
+
+  if (params$randomized.mean.expr) {
+    print(boxplot_variability_example(
+      gonads.biased.in.eye, species=params$species.name, tissue=bias, ylab="Variability rank", color="#FFFAFA"))  
+  } else {
+    print(boxplot_variability_example(
+      gonads.biased.in.eye, species=params$species.name, tissue=bias, ylab="Variability rank", color="#67005D"))
+  
+    print(boxplot_variability_example(
+      gonads.biased.in.eye, species=params$species.name, tissue=bias, ylab="Variability rank", color="#00BFC4"))  
+  }
+}
+```
+
+### Multiple pairwise comparisons {.tabset}
+
+#### Description
+
+Variability of the set of _x_-biased genes expressed in organ _i_ (not _x_) vs. variability of other organ-biased genes in organ _i_ (excluding _i_-biased genes)
+
+e.g., variability of brain-biased genes expressed in the ovary vs. variability of other organ-biased genes expressed in the ovary (excluding ovary-biased genes)
+
+#### Exclude broadly expressed and focal-biased genes
+```{r exclude-broad-and-focal-biased-genes}
+if ("Sex" %in% colnames(expr.var.rank.common)) {
+  expr.var.bias.comparisons <-
+    lapply(c("F"="F","M"="M"), function(s) {
+      dplyr::bind_rows(expr.var.bias.by.condition[[s]], .id="Bias") %>%
+        dplyr::filter(!(TissueBias %in% c("broad","focal")))
+      }) %>%
+    dplyr::bind_rows()  
+} else {
+  expr.var.bias.comparisons <- expr.var.bias.by.condition %>%
+    dplyr::bind_rows(.id="Bias") %>%
+    dplyr::filter(!(TissueBias %in% c("broad","focal")))
+}
+```
+
+#### Mean expression
+
+##### Effect size
+```{r compute-effect-size-mean-expression}
+comparisons.mean.expr <- list()
+
+comparisons.mean.expr$effect.size <- 
+  compute_glass_delta_effect_size(expr.var.bias.comparisons, value="mean")
+```
+
+##### Pairwise Wilcoxon test
+```{r pairwise-comparisons-mean-expression}
+# Complete
+comparisons.mean.expr$wilcox.complete <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons,
+    effect.size.df=comparisons.mean.expr$effect.size,
+    value="mean", apply.pvalue.cutoff=FALSE,
+    order.levels=levels(Tissue)
+  )
+
+# Keep significant observations only
+comparisons.mean.expr$wilcox.signif <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons, 
+    effect.size.df=comparisons.mean.expr$effect.size,
+    value="mean", apply.pvalue.cutoff=TRUE, adj.p=0.05, 
+    order.levels=levels(Tissue))
+```
+
+
+##### Plot - Heatmap
+```{r heatmap-pairwise-comparisons-mean-expression, fig.height=10, fig.width=14}
+heatmap_effect_size_pairwise_comparisons_blue2red(
+  comparisons.mean.expr$wilcox.complete, species=params$species.name, value="mean", order.levels=levels.order)
+
+heatmap_effect_size_pairwise_comparisons(
+  comparisons.mean.expr$wilcox.signif, species=params$species.name, value="mean", order.levels=levels.order)
+```
+
+#### Log-coefficient of variation
+
+##### Effect size
+```{r compute-effect-size-log2cv}
+comparisons.log2cv <- list()
+
+comparisons.log2cv$effect.size <- 
+  compute_glass_delta_effect_size(expr.var.bias.comparisons, value="log2cv")
+```
+
+##### Pairwise Wilcoxon test
+```{r pairwise-comparisons-log2cv}
+# Complete
+comparisons.log2cv$wilcox.complete <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons,
+    effect.size.df=comparisons.log2cv$effect.size,
+    value="log2cv", apply.pvalue.cutoff=FALSE,
+    order.levels=levels(Tissue)
+  )
+
+# Keep significant observations only
+comparisons.log2cv$wilcox.signif <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons, 
+    effect.size.df=comparisons.log2cv$effect.size,
+    value="log2cv", apply.pvalue.cutoff=TRUE, adj.p=0.05, 
+    order.levels=levels(Tissue))
+```
+
+##### Plot - Heatmap
+```{r heatmap-pairwise-comparisons-log2cv, fig.height=10, fig.width=14}
+heatmap_effect_size_pairwise_comparisons_blue2red(
+  comparisons.log2cv$wilcox.complete, species=params$species.name, value="log2cv", order.levels=levels.order)
+
+heatmap_effect_size_pairwise_comparisons(
+  comparisons.log2cv$wilcox.signif, species=params$species.name, value="log2cv", order.levels=levels.order)
+```
+
+#### Residual variation
+
+##### Effect size
+```{r compute-effect-size-resid-var}
+comparisons.resid.var <- list()
+
+comparisons.resid.var$effect.size <- 
+  compute_glass_delta_effect_size(expr.var.bias.comparisons, value="residual_variation")
+```
+
+##### Pairwise Wilcoxon test
+```{r pairwise-comparisons-resid-var}
+# Complete
+comparisons.resid.var$wilcox.complete <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons,
+    effect.size.df=comparisons.resid.var$effect.size,
+    value="residual_variation", apply.pvalue.cutoff=FALSE,
+    order.levels=levels(Tissue)
+  )
+
+# Keep significant observations only
+comparisons.resid.var$wilcox.signif <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons, 
+    effect.size.df=comparisons.resid.var$effect.size,
+    value="residual_variation", apply.pvalue.cutoff=TRUE, adj.p=0.05, 
+    order.levels=levels(Tissue))
+```
+
+##### Plot - Heatmap
+```{r heatmap-pairwise-comparisons-resid-var, fig.height=10, fig.width=14}
+heatmap_effect_size_pairwise_comparisons_blue2red(
+  comparisons.resid.var$wilcox.complete, species=params$species.name, value="residual_variation", order.levels=levels.order)
+
+heatmap_effect_size_pairwise_comparisons(
+  comparisons.resid.var$wilcox.signif, species=params$species.name, value="residual_variation", order.levels=levels.order)
+```
+
+#### Variability rank
+
+##### Effect size
+```{r compute-effect-size-variability}
+comparisons.expr.var <- list()
+
+comparisons.expr.var$effect.size <- 
+  compute_glass_delta_effect_size(expr.var.bias.comparisons, value="variability")
+```
+
+##### Pairwise Wilcoxon test
+```{r pairwise-comparisons-variability}
+# Complete
+comparisons.expr.var$wilcox.complete <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons,
+    effect.size.df=comparisons.expr.var$effect.size,
+    value="variability", apply.pvalue.cutoff=FALSE,
+    order.levels=levels(Tissue)
+  )
+
+# Keep significant observations only
+comparisons.expr.var$wilcox.signif <- 
+  compute_pairwise_comparisons(
+    comparisons.df=expr.var.bias.comparisons, 
+    effect.size.df=comparisons.expr.var$effect.size,
+    value="variability", apply.pvalue.cutoff=TRUE, adj.p=0.05, 
+    order.levels=levels(Tissue))
+```
+
+
+##### Plot - Heatmap
+```{r heatmap-pairwise-comparisons-variability, fig.height=10, fig.width=14}
+heatmap_effect_size_pairwise_comparisons_blue2red(
+  comparisons.expr.var$wilcox.complete, species=params$species.name, value="variability", order.levels=levels.order)
+
+heatmap_effect_size_pairwise_comparisons(
+  comparisons.expr.var$wilcox.signif, species=params$species.name, value="variability", order.levels=levels.order)
+```
+
+# Save
+
+## Observed
+```{r save-objects-1, eval=!params$randomized.mean.expr}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+if (!params$all.nonzero.matrix) {
+  saveRDS(expr.var.rank.common,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.rank.common.rds", sep="_")))
+  
+  saveRDS(expr.var.bias.by.condition,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.by.condition.rds", sep="_")))
+  
+  saveRDS(expr.var.brain.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.brain.bias.rds", sep="_")))
+  
+  saveRDS(expr.var.liver.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.liver.bias.rds", sep="_")))
+  
+  saveRDS(expr.var.bias.comparisons,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.comparisons.rds", sep="_")))
+  
+  saveRDS(comparisons.mean.expr,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.mean.expr.rds", sep="_")))
+  
+  saveRDS(comparisons.log2cv,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.log2cv.rds", sep="_")))
+  
+  saveRDS(comparisons.resid.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.resid.var.rds", sep="_")))
+
+  saveRDS(comparisons.expr.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.expr.var.rds", sep="_")))
+  
+} else {
+  saveRDS(expr.var.rank.common,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.rank.common.nonzero.rds", sep="_")))
+  
+  saveRDS(expr.var.bias.by.condition,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.by.condition.nonzero.rds", sep="_")))
+  
+  saveRDS(expr.var.brain.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.brain.bias.nonzero.rds", sep="_")))
+  
+  saveRDS(expr.var.liver.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.liver.bias.nonzero.rds", sep="_")))
+  
+  saveRDS(expr.var.bias.comparisons,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.comparisons.nonzero.rds", sep="_")))
+  
+  saveRDS(comparisons.mean.expr,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.mean.expr.nonzero.rds", sep="_")))
+  
+  saveRDS(comparisons.log2cv,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.log2cv.nonzero.rds", sep="_")))
+  
+  saveRDS(comparisons.resid.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.resid.var.nonzero.rds", sep="_")))
+
+  saveRDS(comparisons.expr.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.expr.var.nonzero.rds", sep="_")))
+}
+```
+
+## Randomized mean expression
+```{r save-objects-2, eval=params$randomized.mean.expr}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+if (!params$all.nonzero.matrix) {
+  saveRDS(expr.var.rank.common,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.rank.common", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+
+  saveRDS(expr.var.bias.by.condition,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.by.condition", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(expr.var.brain.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.brain.bias", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(expr.var.liver.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.liver.bias", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(expr.var.bias.comparisons,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.comparisons", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(comparisons.mean.expr,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.mean.expr", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(comparisons.log2cv,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.log2cv", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(comparisons.resid.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.resid.var", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+
+  saveRDS(comparisons.expr.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.expr.var", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+} else {
+  saveRDS(expr.var.rank.common,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.rank.common.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+
+  saveRDS(expr.var.bias.by.condition,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.by.condition.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(expr.var.brain.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.brain.bias.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(expr.var.liver.bias,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.liver.bias.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(expr.var.bias.comparisons,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "expr.var.bias.comparisons.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(comparisons.mean.expr,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.mean.expr.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(comparisons.log2cv,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.log2cv.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+  
+  saveRDS(comparisons.resid.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.resid.var.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+
+  saveRDS(comparisons.expr.var,
+          file.path(params$output.rds.path, 
+                    paste(params$species, "comparisons.expr.var.nonzero", 
+                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+}
+```
+

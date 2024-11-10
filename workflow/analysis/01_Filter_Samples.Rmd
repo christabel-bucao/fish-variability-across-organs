@@ -1,0 +1,589 @@
+---
+title: "Filter Samples (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  counts.path: "../../data/counts"
+  sample.metadata.path: "../../data/sample_metadata"
+  gene.metadata.path: "../../data/gene_metadata"
+  output.rds.path: "../../results/01_Filter_Samples"
+  umi.counts: TRUE
+  species: "DRE"
+  species.name: "Danio rerio"
+  min.genes: 10000
+  min.reads: 500000
+  min.replicates: 4
+  min.cpm: 1.0
+  normalize.by.condition: TRUE
+  set.scale: TRUE
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/helper_functions.R")
+source("../functions/filter_samples.R")
+source("../functions/filter_samples_plots.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Metadata
+```{r import-metadata}
+# Sample metadata
+metadata <- 
+  read.delim(file.path(params$sample.metadata.path, 
+                       paste(params$species, "sample_annotation.tsv", sep="_")), 
+             sep="\t") %>%
+  dplyr::arrange(Tissue, IndID, .by_group=TRUE)
+
+# Gene metadata
+biotype <- 
+  read.delim(file.path(params$gene.metadata.path, 
+                       paste(params$species, "biotype_Ensembl_105.txt", sep="_")), 
+             sep="\t")
+```
+
+### UMI counts
+```{r import-counts}
+# Load counts
+counts <- 
+  vector("list", length(levels(as.factor(metadata$ProjectSeqBatch))))
+names(counts) <- levels(as.factor(metadata$ProjectSeqBatch))
+
+if (params$umi.counts==TRUE) {
+  counts <- lapply(setNames(names(counts),names(counts)), function(batch) {
+    read.delim(file.path(params$counts.path, 
+                         paste(params$species, batch, "UMI_counts.txt", sep="_")), 
+               sep="\t")
+  })  
+} else {
+  counts <- lapply(setNames(names(counts),names(counts)), function(batch) {
+    read.delim(file.path(params$counts.path, 
+                         paste(params$species, batch, "counts.txt", sep="_")), 
+               sep="\t")
+  })
+}
+
+# Map barcodes to sample names
+counts <- 
+  lapply(setNames(names(counts), names(counts)), function(batch) {
+    map_barcodes_to_sample_names(counts[[batch]], 
+                                 metadata[metadata$ProjectSeqBatch==batch,])
+  }) %>%
+  Reduce(function(...) merge(..., by="GeneID"), .) %>%
+  tibble::column_to_rownames("GeneID") %>%
+  as.matrix()
+
+counts <- counts[,metadata$SampleName]
+
+data.init <- list("metadata"=metadata, "counts"=counts)
+rm(counts, metadata)
+```
+
+# Main {.tabset}
+
+## Before filtering
+
+Summarize number of mapped reads and number of detected genes (counts > 0)
+```{r summarize-sequencing-results}
+data.init$metadata <- 
+  dplyr::inner_join(data.init$metadata, 
+                    summarize_sequencing_results(data.init$counts), by="SampleName")
+```
+
+### Plot - Detected genes x Mapped reads
+```{r plot-detected-genes-vs-mapped-reads, fig.align='center', fig.height=5}
+plot_detected_genes_vs_mapped_reads(
+  data.init$metadata, params$min.genes, params$min.reads, params$set.scale)
+```
+
+Initial gene filtering and normalization
+```{r initial-gene-filtering-and-normalization}
+data.init$counts.gf <-
+  filter_genes_by_cpm_per_condition(data.init$counts, data.init$metadata, min.cpm=params$min.cpm)
+
+# Normalize across all conditions
+data.init$tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.init$counts.gf, data.init$metadata, log2=FALSE)
+
+data.init$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.init$counts.gf, data.init$metadata, 
+                              log2=TRUE, shift.min=TRUE)
+```
+
+### Plot - PCA {.tabset}
+
+Check sample clustering before removing low quality samples
+```{r plot-initial-pca, fig.align='center'}
+data.init$pca <- run_pca(data.init$log2.tmm.cpm.gf)
+```
+
+#### By mapped reads
+```{r plot-initial-pca-mapped-reads, fig.align='center'}
+plot_pca_by_mapped_reads(data.init$pca, data.init$metadata, params$min.reads)
+plot_pca_by_mapped_reads_gradient(data.init$pca, data.init$metadata)
+```
+
+#### By detected genes
+```{r plot-initial-pca-detected-genes, fig.align='center'}
+plot_pca_by_detected_genes(data.init$pca, data.init$metadata, params$min.genes)
+plot_pca_by_detected_genes_gradient(data.init$pca, data.init$metadata)
+```
+
+#### By batch
+```{r plot-initial-pca-batch, fig.align='center'}
+plot_pca_by_batch(data.init$pca, data.init$metadata)
+```
+
+#### By condition
+```{r plot-initial-pca-condition, fig.align='center'}
+plot_pca_by_condition(data.init$pca, data.init$metadata)
+plot_pca_by_condition_pc34(data.init$pca, data.init$metadata)
+```
+
+## Filter 1: Sequencing quality
+
+Remove samples with less than minimum detected genes OR less than minimum mapped reads
+```{r filter-samples-by-detected-genes-mapped-reads, fig.align='center', fig.height=5}
+data.qc1.seq <- 
+  filter_samples_by_detected_genes_mapped_reads(
+    data.init$counts, data.init$metadata, params$min.genes, params$min.reads)
+
+# Remove tissue-sex conditions with few replicates remaining
+data.qc1.seq <-
+  filter_conditions_by_min_replicates(
+    data.qc1.seq$counts, data.qc1.seq$metadata, params$min.replicates)
+data.qc1.seq$counts.gf <-
+  filter_genes_by_cpm_per_condition(data.qc1.seq$counts, data.qc1.seq$metadata, min.cpm=params$min.cpm)
+
+# Normalize across all conditions
+data.qc1.seq$tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc1.seq$counts.gf, data.qc1.seq$metadata, log2=FALSE)
+
+data.qc1.seq$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc1.seq$counts.gf, data.qc1.seq$metadata,
+                              log2=TRUE, shift.min=TRUE)
+
+plot_detected_genes_vs_mapped_reads(data.qc1.seq$metadata, params$min.genes, params$min.reads)
+```
+
+### Plot - PCA {.tabset}
+```{r plot-pca-sequencing-quality-filter, fig.align='center'}
+data.qc1.seq$pca <- run_pca(data.qc1.seq$log2.tmm.cpm.gf)
+```
+
+#### By mapped reads
+```{r plot-pca-sequencing-quality-filter-mapped-reads, fig.align='center'}
+plot_pca_by_mapped_reads_gradient(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_detected_genes_gradient(data.qc1.seq$pca, data.qc1.seq$metadata)
+```
+
+#### By detected genes
+```{r plot-pca-sequencing-quality-filter-detected-genes, fig.align='center'}
+plot_pca_by_detected_genes_gradient(data.qc1.seq$pca, data.qc1.seq$metadata)
+```
+
+#### By batch
+```{r plot-pca-sequencing-quality-filter-batch, fig.align='center'}
+plot_pca_by_batch(data.qc1.seq$pca, data.qc1.seq$metadata)
+```
+
+#### By condition
+```{r plot-pca-sequencing-quality-filter-condition, fig.align='center'}
+plot_pca_by_condition(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_condition_pc34(data.qc1.seq$pca, data.qc1.seq$metadata)
+```
+
+### Plot - Correlation heatmap
+```{r plot-heatmap-sequencing-quality-filter, fig.align='center', fig.width = 12, fig.height = 8}
+data.qc1.seq$cor.matrix <- cor(data.qc1.seq$log2.tmm.cpm.gf, method="pearson")
+
+plot_correlation_heatmap(data.qc1.seq$cor.matrix, data.qc1.seq$metadata, clust=TRUE)
+```
+
+## Filter 2: Within-tissue correlation
+
+Iterative removal of low correlation samples
+```{r filter-samples-by-correlation}
+data.qc2.cor <- 
+  iterate_filter_samples_by_correlation(
+    data.qc1.seq$counts, data.qc1.seq$metadata, min.cpm=params$min.cpm, round=2)
+
+# Remove tissue-sex conditions with few replicates remaining
+data.qc2.cor <- 
+  filter_conditions_by_min_replicates(
+    data.qc2.cor$counts, data.qc2.cor$metadata, params$min.replicates)
+data.qc2.cor$counts.gf <-
+  filter_genes_by_cpm_per_condition(
+    data.qc2.cor$counts, data.qc2.cor$metadata, min.cpm=params$min.cpm)
+
+# Normalize across all conditions
+data.qc2.cor$tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc2.cor$counts.gf, data.qc2.cor$metadata, log2=FALSE)
+
+data.qc2.cor$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc2.cor$counts.gf, data.qc2.cor$metadata, 
+                              log2=TRUE, shift.min=TRUE)
+```
+
+### Plot - PCA {.tabset}
+```{r plot-pca-correlation-filter, fig.align='center'}
+data.qc2.cor$pca <- run_pca(data.qc2.cor$log2.tmm.cpm.gf)
+```
+
+#### By batch
+```{r plot-pca-correlation-filter-batch, fig.align='center'}
+plot_pca_by_batch(data.qc2.cor$pca, data.qc2.cor$metadata)
+```
+
+#### By condition
+```{r plot-pca-correlation-filter-condition, fig.align='center'}
+plot_pca_by_condition(data.qc2.cor$pca, data.qc2.cor$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor$pca, data.qc2.cor$metadata)
+```
+
+### Plot - Correlation heatmap
+```{r plot-heatmap-correlation-filter, fig.align='center', fig.width = 12, fig.height = 8}
+data.qc2.cor$cor.matrix <- cor(data.qc2.cor$log2.tmm.cpm.gf, method="pearson")
+
+plot_correlation_heatmap(data.qc2.cor$cor.matrix, data.qc2.cor$metadata, clust=TRUE)
+```
+
+### Boxplot - Detected genes per organ
+```{r boxplot-detected-genes-correlation-filter, fig.width=18, fig.height=10}
+boxplot_detected_genes(data.qc2.cor$metadata)
+```
+
+
+## Gene biotype
+
+Split genes by biotype
+```{r split-by-gene-biotype}
+data.qc2.cor$coding$log2.tmm.cpm.gf <-
+  data.qc2.cor$log2.tmm.cpm.gf[
+    rownames(data.qc2.cor$log2.tmm.cpm.gf) 
+        %in% biotype$Gene.stable.ID[biotype$Gene.type=="protein_coding"],]
+
+data.qc2.cor$lncrna$log2.tmm.cpm.gf <-
+  data.qc2.cor$log2.tmm.cpm.gf[
+    rownames(data.qc2.cor$log2.tmm.cpm.gf) 
+        %in% biotype$Gene.stable.ID[biotype$Gene.type=="lncRNA" | 
+                                      biotype$Gene.type=="lincRNA"],]
+
+# Protein-coding
+print(nrow(data.qc2.cor$coding$log2.tmm.cpm.gf))
+# lncRNA
+print(nrow(data.qc2.cor$lncrna$log2.tmm.cpm.gf))
+# Neither
+nrow(data.qc2.cor$log2.tmm.cpm.gf) - 
+  (nrow(data.qc2.cor$coding$log2.tmm.cpm.gf) + nrow(data.qc2.cor$lncrna$log2.tmm.cpm.gf))
+```
+
+### Protein-coding
+
+#### Plot - PCA {.tabset}
+```{r plot-pca-protein-coding, fig.align='center'}
+data.qc2.cor$coding$pca <- run_pca(data.qc2.cor$coding$log2.tmm.cpm.gf)
+```
+
+##### By batch
+```{r plot-pca-protein-coding-batch, fig.align='center'}
+plot_pca_by_batch(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
+```
+
+##### By condition
+```{r plot-pca-protein-coding-condition, fig.align='center'}
+plot_pca_by_condition(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
+```
+
+#### Plot - Correlation heatmap
+```{r plot-heatmap-protein-coding, fig.align='center', fig.width = 12, fig.height = 8}
+data.qc2.cor$coding$cor.matrix <- 
+  cor(data.qc2.cor$coding$log2.tmm.cpm.gf, method="pearson")
+
+plot_correlation_heatmap(data.qc2.cor$coding$cor.matrix, 
+                         data.qc2.cor$metadata, clust=TRUE)
+```
+
+### lncRNA
+
+#### Plot - PCA {.tabset}
+```{r plot-pca-lncrna, fig.align='center'}
+data.qc2.cor$lncrna$pca <- run_pca(data.qc2.cor$lncrna$log2.tmm.cpm.gf)
+```
+
+##### By batch
+```{r plot-pca-lncrna-batch, fig.align='center'}
+plot_pca_by_batch(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
+```
+
+##### By condition
+```{r plot-pca-lncrna-condition, fig.align='center'}
+plot_pca_by_condition(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
+```
+
+#### Plot - Correlation heatmap
+```{r plot-heatmap-lncrna, fig.align='center', fig.width = 12, fig.height = 8}
+data.qc2.cor$lncrna$cor.matrix <- 
+  cor(data.qc2.cor$lncrna$log2.tmm.cpm.gf, method="pearson")
+
+plot_correlation_heatmap(data.qc2.cor$lncrna$cor.matrix, 
+                         data.qc2.cor$metadata, clust=TRUE)
+```
+
+## Reduced (all nonzero) expression matrix
+```{r keep-all-nonzero-counts-only}
+data.qc2.cor.nonzero <- data.qc2.cor[c("conditions","metadata","counts")]
+
+# Only keep genes with no zero counts across all samples
+# to set the same number of 'expressed genes' per condition
+data.qc2.cor.nonzero$counts.gf <-
+  keep_full_nonzero_expression_matrix(data.qc2.cor.nonzero$counts)
+
+# Normalize across all conditions
+data.qc2.cor.nonzero$tmm.cpm.gf <-
+  transform_counts_to_tmm_cpm(data.qc2.cor.nonzero$counts.gf, data.qc2.cor.nonzero$metadata, log2=FALSE)
+
+data.qc2.cor.nonzero$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc2.cor.nonzero$counts.gf, data.qc2.cor.nonzero$metadata, 
+                              log2=TRUE, shift.min=FALSE)
+```
+
+### Plot - PCA {.tabset}
+```{r plot-pca-correlation-filter-nonzero, fig.align='center'}
+data.qc2.cor.nonzero$pca <- run_pca(data.qc2.cor.nonzero$log2.tmm.cpm.gf)
+```
+
+#### By batch
+```{r plot-pca-correlation-filter-nonzero-batch, fig.align='center'}
+plot_pca_by_batch(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
+```
+
+#### By condition
+```{r plot-pca-correlation-filter-nonzero-condition, fig.align='center'}
+plot_pca_by_condition(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
+```
+
+
+### Plot - Correlation heatmap
+```{r plot-heatmap-correlation-filter-nonzero, fig.align='center', fig.width = 12, fig.height = 8}
+data.qc2.cor.nonzero$cor.matrix <- cor(data.qc2.cor.nonzero$log2.tmm.cpm.gf, method="pearson")
+
+plot_correlation_heatmap(data.qc2.cor.nonzero$cor.matrix, data.qc2.cor.nonzero$metadata, clust=TRUE)
+```
+
+
+## Normalization per condition
+```{r normalize-per-condition, eval=params$normalize.by.condition}
+data.conditions <- vector(mode="list", length=6)
+names(data.conditions) <- 
+  c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
+
+data.conditions$conditions <- data.qc2.cor$conditions
+data.conditions$metadata <- data.qc2.cor$metadata
+
+Tissue <- as.factor(data.qc2.cor$metadata$Tissue)
+
+if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
+  Sex <- as.factor(data.qc2.cor$metadata$Sex)
+  
+  data.conditions$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        subset_expr_matrix(data.qc2.cor$counts, tissue=t, sex=s)
+      })
+    })
+  
+  data.conditions$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        filter_genes_by_cpm(data.conditions$counts[[t]][[s]], 
+                            min.cpm=params$min.cpm, tmm=FALSE)
+      })
+    })
+
+  data.conditions$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions$counts.gf[[t]][[s]],
+          data.conditions$metadata[data.conditions$metadata$Tissue==t &
+                                  data.conditions$metadata$Sex==s,],
+          log2=FALSE)
+      })
+    })
+    
+  data.conditions$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions$counts.gf[[t]][[s]],
+          data.conditions$metadata[data.conditions$metadata$Tissue==t &
+                                  data.conditions$metadata$Sex==s,],
+          log2=TRUE, shift.min=TRUE)
+      })
+    })
+  
+} else {
+  data.conditions$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      subset_expr_matrix(data.qc2.cor$counts, tissue=t)
+    })
+  
+  data.conditions$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      filter_genes_by_cpm(data.conditions$counts[[t]], 
+                          min.cpm=params$min.cpm, tmm=FALSE)
+    })
+  
+  data.conditions$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions$counts.gf[[t]],
+          data.conditions$metadata[data.conditions$metadata$Tissue==t,],
+          log2=FALSE)
+    })
+  
+  data.conditions$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions$counts.gf[[t]],
+          data.conditions$metadata[data.conditions$metadata$Tissue==t,],
+          log2=TRUE, shift.min=TRUE)
+    })
+}
+```
+
+### Reduced (all nonzero) expression matrix
+```{r normalize-per-condition-nonzero, eval=params$normalize.by.condition}
+data.conditions.nonzero <- vector(mode="list", length=6)
+names(data.conditions.nonzero) <- 
+  c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
+
+data.conditions.nonzero$conditions <- data.qc2.cor$conditions
+data.conditions.nonzero$metadata <- data.qc2.cor$metadata
+
+Tissue <- as.factor(data.qc2.cor$metadata$Tissue)
+
+if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
+  Sex <- as.factor(data.qc2.cor$metadata$Sex)
+  
+  data.conditions.nonzero$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        subset_expr_matrix(data.qc2.cor$counts, tissue=t, sex=s)
+      })
+    })
+  
+  data.conditions.nonzero$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        data.conditions.nonzero$counts[[t]][[s]][rownames(data.qc2.cor.nonzero$counts.gf),]
+      })
+    })
+
+  data.conditions.nonzero$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions.nonzero$counts.gf[[t]][[s]],
+          data.conditions.nonzero$metadata[data.conditions.nonzero$metadata$Tissue==t &
+                                  data.conditions.nonzero$metadata$Sex==s,],
+          log2=FALSE)
+      })
+    })
+    
+  data.conditions.nonzero$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions.nonzero$counts.gf[[t]][[s]],
+          data.conditions.nonzero$metadata[data.conditions.nonzero$metadata$Tissue==t &
+                                  data.conditions.nonzero$metadata$Sex==s,],
+          log2=TRUE, shift.min=TRUE)
+      })
+    })
+  
+} else {
+  data.conditions.nonzero$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      subset_expr_matrix(data.qc2.cor$counts, tissue=t)
+    })
+  
+  data.conditions.nonzero$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      data.conditions.nonzero$counts[[t]][rownames(data.qc2.cor.nonzero$counts.gf),]
+    })
+  
+  data.conditions.nonzero$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions.nonzero$counts.gf[[t]],
+          data.conditions.nonzero$metadata[data.conditions.nonzero$metadata$Tissue==t,],
+          log2=FALSE)
+    })
+  
+  data.conditions.nonzero$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions.nonzero$counts.gf[[t]],
+          data.conditions.nonzero$metadata[data.conditions.nonzero$metadata$Tissue==t,],
+          log2=TRUE, shift.min=TRUE)
+    })
+}
+```
+
+
+# Save
+```{r save-objects-1}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+# Normalized across all conditions
+saveRDS(data.qc2.cor, 
+        file.path(params$output.rds.path, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc2.cor.rds", sep="_")))
+
+saveRDS(data.qc2.cor.nonzero, 
+        file.path(params$output.rds.path, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc2.cor.nonzero.rds", sep="_")))
+```
+
+```{r save-objects-2, eval=params$normalize.by.condition}
+# Normalized per condition
+saveRDS(data.conditions, 
+        file.path(params$output.rds.path, 
+                  paste(params$species,
+                        params$min.replicates, "reps",
+                        "data.conditions.rds", sep="_")))
+
+saveRDS(data.conditions.nonzero, 
+        file.path(params$output.rds.path, 
+                  paste(params$species,
+                        params$min.replicates, "reps",
+                        "data.conditions.nonzero.rds", sep="_")))
+```

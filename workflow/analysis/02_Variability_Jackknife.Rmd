@@ -1,0 +1,210 @@
+---
+title: "Variability Jackknife (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.rds.path: "../../results/01_Filter_Samples"
+  output.rds.path: "../../results/02_Variability_Jackknife"
+  species: "DRE"
+  species.name: "Danio rerio"
+  min.percentile: 0.00
+  max.percentile: 0.95
+  win.size: 100
+  all.nonzero.matrix: FALSE
+  run.example: FALSE
+  ex.tissue: "brain"
+  ex.sex: "F"
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+library(parallel)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/variability_jackknife.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+```{r import-filtered-samples}
+# Load saved data from 01_Filter_Samples.Rmd
+# Normalized by condition
+if (!params$all.nonzero.matrix) {
+  filtered.samples <- readRDS(
+    file.path(params$input.rds.path,
+              paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+} else {
+  filtered.samples <- readRDS(
+    file.path(params$input.rds.path,
+              paste(params$species, "4_reps_data.conditions.nonzero.rds", sep="_")))  
+}
+
+Tissue <- as.factor(filtered.samples$metadata$Tissue)
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  Sex <- as.factor(filtered.samples$metadata$Sex) 
+}
+```
+
+# Main
+
+## Example: Compute variability metrics without jackknifing {.tabset}
+```{r run-example, eval=params$run.example}
+t <- params$ex.tissue
+s <- params$ex.sex
+
+# See variability_jackknife.R for descriptions of functions
+
+# Different variability metrics
+## Adjusted SD
+var.adj.sd <- adjusted_sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+### Variability percentile rank within a sliding window of length win.size
+var.adj.sd$rank.adj.sd <- 
+  compute_local_ev_rank(var.adj.sd$mean, var.adj.sd$log2.adj.sd, win.size=100)
+
+## Residual log2 (CV)^2
+var.resid.cv <- residual_log2cv(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+var.resid.cv$rank.resid.log2.cv <- 
+  compute_local_ev_rank(var.resid.cv$mean, var.resid.cv$resid.log2.cv, win.size=100)
+
+## Residual log2 SD
+var.resid.sd <- residual_log2sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+var.resid.sd$rank.resid.log2.sd <- 
+  compute_local_ev_rank(var.resid.sd$mean, var.resid.sd$resid.log2.sd, win.size=100)
+```
+
+### Correlation between methods
+```{r compare-variability-metrics, eval=params$run.example}
+# Correlation between methods
+cor.test(var.adj.sd$log2.adj.sd, var.resid.cv$resid.log2.cv)
+cor.test(var.adj.sd$rank.adj.sd, var.resid.cv$rank.resid.log2.cv)
+```
+
+## Jackknife variability metrics
+
+### Adjusted SD
+```{r run-jackknife-adj-sd}
+# Run jackknife for each tissue or tissue-sex condition
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  jack.adj.sd <- mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL } 
+      else {
+        jackknife_adj_sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]], 
+                         min.percentile=params$min.percentile,
+                         max.percentile=params$max.percentile,
+                         win.size=params$win.size) 
+      }
+    })
+  }, mc.cores=4)
+  
+} else {
+  jack.adj.sd <- mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    jackknife_adj_sd(filtered.samples$log2.tmm.cpm.gf[[t]],
+                     min.percentile=params$min.percentile,
+                     max.percentile=params$max.percentile,
+                     win.size=params$win.size)
+  }, mc.cores=4)    
+}
+```
+
+### Residual log2 (SD)
+```{r run-jackknife-resid-log2-sd}
+# Run jackknife for each tissue or tissue-sex condition
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  jack.resid.sd <- mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL } 
+      else {
+        jackknife_resid_log2sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]],
+                               min.percentile=params$min.percentile,
+                               max.percentile=params$max.percentile,
+                               win.size=params$win.size) 
+      }
+    })
+  }, mc.cores=4)
+  
+} else {
+  jack.resid.sd <- mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    jackknife_resid_log2sd(filtered.samples$log2.tmm.cpm.gf[[t]],
+                           min.percentile=params$min.percentile,
+                           max.percentile=params$max.percentile,
+                           win.size=params$win.size)
+  }, mc.cores=4)    
+}
+
+```
+
+### Residual log2 (CV)^2
+```{r run-jackknife-resid-log2-cv}
+# Run jackknife for each tissue or tissue-sex condition
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  jack.resid.cv <- mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL } 
+      else {
+        jackknife_resid_log2cv(filtered.samples$log2.tmm.cpm.gf[[t]][[s]], 
+                               min.percentile=params$min.percentile,
+                               max.percentile=params$max.percentile,
+                               win.size=params$win.size) 
+      }
+    })
+  }, mc.cores=4)
+  
+} else {
+  jack.resid.cv <- mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    jackknife_resid_log2cv(filtered.samples$log2.tmm.cpm.gf[[t]],
+                           min.percentile=params$min.percentile,
+                           max.percentile=params$max.percentile,
+                           win.size=params$win.size)
+  }, mc.cores=4)    
+}
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+if (!params$all.nonzero.matrix) { 
+  saveRDS(jack.adj.sd,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.adj.sd.rds", sep="_")))
+  
+  saveRDS(jack.resid.sd,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.resid.sd.rds", sep="_")))
+  
+  saveRDS(jack.resid.cv,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.resid.cv.rds", sep="_")))
+} else {
+  saveRDS(jack.adj.sd,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.adj.sd.nonzero.rds", sep="_")))
+  
+  saveRDS(jack.resid.sd,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.resid.sd.nonzero.rds", sep="_")))
+  
+  saveRDS(jack.resid.cv,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "jack.resid.cv.nonzero.rds", sep="_")))  
+}
+```

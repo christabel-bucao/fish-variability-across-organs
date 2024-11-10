@@ -1,0 +1,88 @@
+---
+title: "Selection species tree"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  selectome.path: "../../data/selectome"
+  output.rds.path: "../../results/09_Selection_Species_Tree"
+---
+
+# Setup
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(treeio)
+library(tidytree)
+library(ggplot2)
+library(ggtree)
+```
+
+## Functions
+```{r source-functions}
+
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Species tree
+```{r read-species-tree}
+species.tree <- treeio::read.nhx(file.path(params$selectome.path,"Selectome_Ensembl98_SpeciesTree.nhx"))
+species.tree.tbl <- tidytree::as_tibble(species.tree)
+```
+
+## Plot species tree
+```{r group-otu}
+species.tree.group <- tidytree::groupOTU(species.tree, .node=list(c(185,183,184,176)))
+#species.tree.group <- tidytree::groupOTU(species.tree, .node=list(c(183),c(184),c(176)))
+species.tree.group@phylo$tip.label <- gsub("_", " ", species.tree@phylo$tip.label)
+```
+
+```{r plot-species-tree, fig.width=12, fig.height=8}
+full.ggtree <- ggtree(species.tree.group, aes(color=group))
+full.ggtree$data$group[176] <- 0
+full.ggtree$data$group[183] <- 0
+full.ggtree$data$group[184] <- 0
+full.ggtree$data$group[185] <- 0
+
+collapsed.ggtree <- collapse(full.ggtree, node=187) %>%
+  collapse(node=277) %>%
+  collapse(node=280) %>%
+  collapse(node=308) %>%
+  collapse(node=310)
+
+collapsed.ggtree +
+  geom_tiplab(aes(label=label, subset=c(label %in% c("Lepisosteus oculatus","Esox lucius","Danio rerio")), color=group),
+              fontface='italic', size=3.5, color="#000000") +
+  scale_color_manual(values=c("#A9A9A9","#00BFC4")) +
+  geom_nodelab(aes(label=label, 
+                   subset=c(label %in% c("Euteleostomi","Actinopterygii","Neopterygii",
+                                         "Osteoglossocephalai","Clupeocephala",
+                                         "Euteleosteomorpha","Protacanthopterygii",
+                                         "Otomorpha","Otophysi"))), 
+               size=3.5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#00BFC4") +
+  geom_nodelab(aes(label=label, 
+                   subset=c(!(label %in% c("Euteleostomi","Actinopterygii","Neopterygii",
+                                         "Osteoglossocephalai","Clupeocephala",
+                                         "Euteleosteomorpha","Protacanthopterygii",
+                                         "Otomorpha","Otophysi")))), 
+               size=3.5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#A9A9A9") +
+  xlim(c(-0.5,7.5)) +
+  coord_cartesian() +
+  theme_tree2() +
+  theme(legend.position="none", plot.margin = unit(c(25,15,25,15), "mm"),
+        axis.text.x=element_text(size=12))
+```
+
+
+

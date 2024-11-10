@@ -1,0 +1,18 @@
+# Ignore directories
+/bin/
+/results/
+/data/fastq/
+/docs/
+/results/
+/trash/
+/workflow/.Rproj.user/
+/workflow/.snakemake/
+
+# Ignore files
+.DS_Store
+*.xlsx
+*.docx
+*.rds
+*.Rdata
+*_with_branch_length.res.txt
+*_taxa.txt

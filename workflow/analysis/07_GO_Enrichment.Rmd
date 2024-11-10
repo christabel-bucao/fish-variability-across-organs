@@ -1,0 +1,244 @@
+---
+title: "GO Enrichment (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.samples.rds.path: "../../results/01_Filter_Samples"
+  input.variability.rds.path: "../../results/03_Variability_Plots"
+  output.path: "../../results/07_GO_Enrichment"
+  species: "DRE"
+  species.name: "Danio rerio"
+  ev.percentile: 0.20
+  pvalue.cutoff: 0.01
+  condition.cutoff: 3
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+library(parallel)
+library(GOstats)
+library(org.Dr.eg.db)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/go_enrichment.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+
+### Expression levels
+```{r import-expression-levels}
+# Load saved data from 01_Filter_Samples.Rmd
+## Normalized separately per condition
+filtered.samples <- readRDS(
+  file.path(params$input.samples.rds.path,
+            paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+```
+
+### Expression variability
+```{r import-variability}
+# Load processed expression variability estimates from 03_Variability_Plots.Rmd
+jack.summary <- readRDS(
+  file.path(params$input.variability.rds.path,
+            paste(params$species, "jack.resid.cv.summary.rds", sep="_")))
+```
+
+# Main {.tabset}
+
+## Lowly and highly variable genes genes
+
+### Retrieve top and bottom x% of genes by variability rank
+```{r retrieve-lv-hv-genes}
+Tissue <- as.factor(filtered.samples$metadata$Tissue)
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  Sex <- as.factor(filtered.samples$metadata$Sex) 
+}
+
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  ev.genes <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        retrieve_variability_gene_lists(jack.summary[[t]][[s]], 
+                                        ev.percentile=params$ev.percentile)
+    })
+  })
+} else {
+  ev.genes <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+        retrieve_variability_gene_lists(jack.summary[[t]], 
+                                        ev.percentile=params$ev.percentile)
+  })    
+}
+```
+
+### Convert Ensembl to Entrez IDs for each gene list
+```{r convert-ensembl-to-entrez}
+keys <- keys(org.Dr.eg.db, keytype="ENSEMBL")
+entrez <- 
+  mapIds(org.Dr.eg.db, keys=keys, column="ENTREZID", keytype="ENSEMBL", multiVals="first")
+
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  entrez.ids <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        lapply(c("LV"="LV","MV"="MV","HV"="HV","Bgd"="Bgd"), function(g) {
+        entrez[ev.genes[[t]][[s]][[g]]]
+        })
+      })
+    })  
+} else {
+  entrez.ids <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(c("LV"="LV","MV"="MV","HV"="HV","Bgd"="Bgd"), function(g) {
+        entrez[ev.genes[[t]][[g]]]
+      })
+    })   
+}
+```
+
+## GO Stats Hypergeometric Test
+
+### Set parameters
+```{r set-go-stats-params}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  go.params <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        lapply(c("LV"="LV","MV"="MV","HV"="HV"), function(ev) {
+          lapply(c("over"="over","under"="under"), function(test) {
+            new("GOHyperGParams", 
+                geneIds=entrez.ids[[t]][[s]][[ev]],
+                universeGeneIds=entrez.ids[[t]][[s]][["Bgd"]],
+                annotation=org.Dr.eg.db,
+                ontology="BP",
+                pvalueCutoff=params$pvalue.cutoff,
+                conditional=TRUE,
+                testDirection=test)
+          })
+        })
+      })
+    })  
+} else {
+  go.params <- 
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(c("LV"="LV","MV"="MV","HV"="HV"), function(ev) {
+        lapply(c("over"="over","under"="under"), function(test) {
+          new("GOHyperGParams", 
+              geneIds=entrez.ids[[t]][[ev]],
+              universeGeneIds=entrez.ids[[t]][["Bgd"]],
+              annotation=org.Dr.eg.db,
+              ontology="BP",
+              pvalueCutoff=0.01,
+              conditional=TRUE,
+              testDirection=test)
+        })
+      })
+    })    
+}
+```
+
+### Run conditional hypergeometric test
+```{r run-go-stats}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  go.results <- 
+    mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        lapply(c("LV"="LV","MV"="MV","HV"="HV"), function(ev) {
+          lapply(c("over"="over","under"="under"), function(test) {
+            hyperGTest(go.params[[t]][[s]][[ev]][[test]])
+          })
+        })
+      })
+    }, mc.cores=4)  
+} else {
+  go.results <- 
+    mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(c("LV"="LV","MV"="MV","HV"="HV"), function(ev) {
+        lapply(c("over"="over","under"="under"), function(test) {
+          hyperGTest(go.params[[t]][[ev]][[test]])
+          })
+        })
+    }, mc.cores=4)  
+}
+```
+
+### Summarize results
+```{r summarize-go-stats}
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  go.summary <- 
+    mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        lapply(c("LV"="LV","MV"="MV","HV"="HV"), function(ev) {
+          lapply(c("over"="over","under"="under"), function(test) {
+            summary(go.results[[t]][[s]][[ev]][[test]])
+          })
+        })
+    })
+  }, mc.cores=4)
+} else {
+  go.summary <- 
+    mclapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(c("LV"="LV","MV"="MV","HV"="HV"), function(ev) {
+        lapply(c("over"="over","under"="under"), function(test) {
+          summary(go.results[[t]][[ev]][[test]])
+        })
+      })
+  }, mc.cores=4)  
+}
+```
+
+### Aggregate results from multiple GO enrichment tests
+```{r aggregate-go-results}
+go.aggregate <- combine_go_results(go.summary)
+```
+
+### Export results for external plotting
+```{r export-results}
+export_go_results(go.aggregate, params$condition.cutoff, 
+                  output.dir=params$output.path, prefix=params$species)
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.path)) { dir.create(params$output.path, showWarnings=FALSE) }
+
+saveRDS(entrez.ids,
+        file.path(params$output.path, 
+                  paste(params$species, "entrez.ids.rds", sep="_")))
+
+saveRDS(ev.genes,
+        file.path(params$output.path, 
+                  paste(params$species, "ev.genes.rds", sep="_")))
+
+saveRDS(go.params,
+        file.path(params$output.path, 
+                  paste(params$species, "go.params.rds", sep="_")))
+
+saveRDS(go.results,
+        file.path(params$output.path, 
+                  paste(params$species, "go.results.rds", sep="_")))
+
+saveRDS(go.summary,
+        file.path(params$output.path, 
+                  paste(params$species, "go.summary.rds", sep="_")))
+
+saveRDS(go.aggregate,
+        file.path(params$output.path, 
+                  paste(params$species, "go.aggregate.rds", sep="_")))
+```
+

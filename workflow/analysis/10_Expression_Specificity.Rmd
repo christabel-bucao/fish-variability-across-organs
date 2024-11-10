@@ -1,0 +1,429 @@
+---
+title: "Expression Specificity"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.rds.path: "../../results/01_Filter_Samples"
+  output.rds.path: "../../results/10_Expression_Specificity"
+  min.cpm: 1.0
+  tau.cutoff: 0.30
+  all.nonzero.matrix: FALSE
+  randomize.mean.expr: FALSE
+  set.seed: 12345
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+library(tibble)
+library(tidyr)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/filter_samples.R")
+source("../functions/expression_specificity.R")
+source("../functions/expression_specificity_plots.R")
+source("../functions/helper_functions.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+## Data
+```{r import-filtered-samples}
+# Load saved data from 01_Filter_Samples.Rmd
+# Normalized across conditions
+# Minimum replicates
+species <- c("LOC","ELU","DRE")
+
+filtered.samples <- list()
+
+if (!params$all.nonzero.matrix) {
+  filtered.samples$LOC <- readRDS(
+    file.path(params$input.rds.path, "LOC_2_reps_data.qc2.cor.rds"))
+  filtered.samples$ELU <- readRDS(
+    file.path(params$input.rds.path, "ELU_1_reps_data.qc2.cor.rds"))
+  filtered.samples$DRE <- readRDS(
+    file.path(params$input.rds.path, "DRE_1_reps_data.qc2.cor.rds"))
+} else {
+  filtered.samples$LOC <- readRDS(
+    file.path(params$input.rds.path, "LOC_2_reps_data.qc2.cor.nonzero.rds"))
+  filtered.samples$ELU <- readRDS(
+    file.path(params$input.rds.path, "ELU_1_reps_data.qc2.cor.nonzero.rds"))
+  filtered.samples$DRE <- readRDS(
+    file.path(params$input.rds.path, "DRE_1_reps_data.qc2.cor.nonzero.rds"))
+}
+```
+
+# Main {.tabset}
+
+## Expression specificity given all available conditions per species, except skin
+```{r compute-tau-all-conditions-except-skin}
+filtered.samples.exc.skin <- vector("list",3)
+names(filtered.samples.exc.skin) <- species
+
+for (sp in species) {
+  # Remove skin
+  filtered.samples.exc.skin[[sp]]$conditions <-
+    filtered.samples[[sp]]$conditions[filtered.samples[[sp]]$conditions$Tissue!="skin",]
+  
+  filtered.samples.exc.skin[[sp]]$metadata <-
+    filtered.samples[[sp]]$metadata[filtered.samples[[sp]]$metadata$Tissue!="skin",]
+  
+  filtered.samples.exc.skin[[sp]]$counts <-
+    filtered.samples[[sp]]$counts[,!grepl("skin",colnames(filtered.samples[[sp]]$counts))]
+  
+  # Rename "gonads" to "ovary" or "testis" (if known)
+  # They are considered separate anatomical entities for tissue specificity computations
+  if ("Sex" %in% colnames(filtered.samples.exc.skin[[sp]]$metadata)) {
+    filtered.samples.exc.skin[[sp]]$metadata <-
+      split_gonads_df(filtered.samples.exc.skin[[sp]]$metadata)
+    filtered.samples.exc.skin[[sp]]$counts <- 
+      split_gonads_matrix(filtered.samples.exc.skin[[sp]]$counts)
+  }
+  
+  # Repeat gene filtering and normalization after removal of conditions
+  ## Filter lowly or non-expressed genes from raw read counts
+  if (!params$all.nonzero.matrix) {
+    filtered.samples.exc.skin[[sp]]$counts.gf <-
+      filter_genes_by_cpm_per_condition(
+        filtered.samples.exc.skin[[sp]]$counts, filtered.samples.exc.skin[[sp]]$metadata, min.cpm=params$min.cpm)    
+  } else {
+    # For the expression matrix without any zero counts, there is no need to repeat gene filtering
+    filtered.samples.exc.skin[[sp]]$counts.gf <-
+      filtered.samples[[sp]]$counts.gf[,!grepl("skin",colnames(filtered.samples[[sp]]$counts.gf))]
+    
+    if ("Sex" %in% colnames(filtered.samples.exc.skin[[sp]]$metadata)) {
+      filtered.samples.exc.skin[[sp]]$counts.gf <-
+        split_gonads_matrix(filtered.samples.exc.skin[[sp]]$counts.gf)      
+    }
+  }
+
+  ## Normalize across all conditions
+  filtered.samples.exc.skin[[sp]]$log2.tmm.cpm.gf <-
+    transform_counts_to_tmm_cpm(
+      filtered.samples.exc.skin[[sp]]$counts.gf, filtered.samples.exc.skin[[sp]]$metadata,
+      log2=TRUE, shift.min=TRUE)
+  
+  # Expression specificity computations
+  ## Compute mean expression per tissue
+  filtered.samples.exc.skin[[sp]]$mean.expr <-
+    mean_expr_per_tissue(filtered.samples.exc.skin[[sp]]$log2.tmm.cpm.gf,
+                         filtered.samples.exc.skin[[sp]]$metadata)
+  
+  if (params$randomize.mean.expr==TRUE) {
+    # Shuffle mean expression vector per gene
+    filtered.samples.exc.skin[[sp]]$mean.expr <-
+      permute_by_rows(filtered.samples.exc.skin[[sp]]$mean.expr, seed=params$set.seed)
+  }
+  
+  ## Scale by maximum expression
+  filtered.samples.exc.skin[[sp]]$scaled.expr <-
+    scale_by_max_expr(filtered.samples.exc.skin[[sp]]$mean.expr)
+  
+  ## Compute tau from mean expression
+  filtered.samples.exc.skin[[sp]]$tau <-
+    compute_tau(filtered.samples.exc.skin[[sp]]$mean.expr)
+}
+```
+
+```{r tau-summary-all-conditions-except-skin}
+for (sp in species) {
+  print(sp)
+  print(summary(filtered.samples.exc.skin[[sp]]$tau))
+}
+```
+
+### Plot - Tau distribution
+```{r plot-tau-distribution-all-conditions-except-skin}
+for (sp in species) {
+  print(sp)
+  print(levels(as.factor(filtered.samples.exc.skin[[sp]]$metadata$Tissue)))
+  
+  summary(filtered.samples.exc.skin[[sp]]$tau)
+  
+  if (!params$all.nonzero.matrix) {
+      plot_tau_distribution(filtered.samples.exc.skin[[sp]]$tau, prob=seq(0,1,0.25), ylim=c(0.0,2.4))
+  } else {
+    plot_tau_distribution(filtered.samples.exc.skin[[sp]]$tau, prob=seq(0,1,0.25), ylim=c(0.0,3.6))    
+  }
+}
+```
+
+
+### Rank organs for each gene
+```{r rank-organs-all-conditions-except-skin}
+## For each gene, rank conditions by expression level
+for (sp in species) {
+  filtered.samples.exc.skin[[sp]]$expr.rank <-
+    t(apply(-filtered.samples.exc.skin[[sp]]$mean.expr, MARGIN=1, rank, ties.method="max")) %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column(var="GeneID")
+  
+  filtered.samples.exc.skin[[sp]]$expr.rank.pivot <-
+    tidyr::pivot_longer(as.data.frame(filtered.samples.exc.skin[[sp]]$expr.rank),
+                        cols=any_of(colnames(filtered.samples.exc.skin[[sp]]$mean.expr)), 
+                        names_to="Tissue", values_to="ExpRank")
+  
+  filtered.samples.exc.skin[[sp]]$expr.rank.first <- filtered.samples.exc.skin[[sp]]$expr.rank.pivot %>%
+    dplyr::filter(ExpRank==1) %>%
+    dplyr::inner_join(data.frame("GeneID"=names(filtered.samples.exc.skin[[sp]]$tau),
+                                 "tau"=filtered.samples.exc.skin[[sp]]$tau),
+                      by="GeneID")
+  colnames(filtered.samples.exc.skin[[sp]]$expr.rank.first) <- c("GeneID","PrimaryTissue","ExpRank","tau")
+  filtered.samples.exc.skin[[sp]]$expr.rank.first <- 
+    filtered.samples.exc.skin[[sp]]$expr.rank.first[,c("GeneID","PrimaryTissue","tau")]
+}
+```
+
+#### Barplots - Number of genes with top expression in organ
+
+##### No tau cutoff
+```{r distribution-of-top-tissues-all-conditions-except-skin}
+for (sp in species) {
+  print(barplot_top_tissue(
+    expr.rank.first=filtered.samples.exc.skin[[sp]]$expr.rank.first,
+    apply.cutoff=FALSE,
+    title=sp))
+}
+```
+
+##### With tau cutoff
+```{r distribution-of-top-tissues-tau-cutoff-all-conditions-except-skin}
+for (sp in species) {
+  print(barplot_top_tissue(
+    expr.rank.first=filtered.samples.exc.skin[[sp]]$expr.rank.first,
+    apply.cutoff=TRUE, min.tau=params$tau.cutoff,
+    title=sp))
+}
+```
+
+
+## Expression specificity given set of common conditions only
+```{r compute-tau-common-conditions}
+common.tissues <-
+  intersect(filtered.samples$LOC$conditions$Tissue, filtered.samples$ELU$conditions$Tissue) %>%
+  intersect(filtered.samples$DRE$conditions$Tissue)
+
+filtered.samples.common <- vector("list",3)
+names(filtered.samples.common) <- species
+
+for (sp in species) {
+  # Remove skin
+  filtered.samples.common[[sp]]$conditions <-
+    filtered.samples[[sp]]$conditions[filtered.samples[[sp]]$conditions$Tissue %in% common.tissues,]
+  
+  filtered.samples.common[[sp]]$metadata <-
+    filtered.samples[[sp]]$metadata[filtered.samples[[sp]]$metadata$Tissue %in% common.tissues,]
+  
+  filtered.samples.common[[sp]]$counts <-
+    filtered.samples[[sp]]$counts[,filtered.samples[[sp]]$metadata$Tissue %in% common.tissues]
+  
+  # Rename "gonads" to "ovary" or "testis" (if known)
+  # They are considered separate anatomical entities for tissue specificity computations
+  if ("Sex" %in% colnames(filtered.samples.common[[sp]]$metadata)) {
+    filtered.samples.common[[sp]]$metadata <-
+      split_gonads_df(filtered.samples.common[[sp]]$metadata)
+    filtered.samples.common[[sp]]$counts <- 
+      split_gonads_matrix(filtered.samples.common[[sp]]$counts)
+  }
+  
+  # Repeat gene filtering and normalization after removal of conditions
+  ## Filter lowly or non-expressed genes from raw read counts
+  if (!params$all.nonzero.matrix) {
+    filtered.samples.common[[sp]]$counts.gf <-
+      filter_genes_by_cpm_per_condition(
+        filtered.samples.common[[sp]]$counts, filtered.samples.common[[sp]]$metadata, min.cpm=params$min.cpm)    
+  } else {
+    # For the expression matrix without any zero counts, there is no need to repeat gene filtering
+    filtered.samples.common[[sp]]$counts.gf <-
+      filtered.samples[[sp]]$counts.gf[,filtered.samples[[sp]]$metadata$Tissue %in% common.tissues]
+    
+    if ("Sex" %in% colnames(filtered.samples.common[[sp]]$metadata)) {
+      filtered.samples.common[[sp]]$counts.gf <-
+        split_gonads_matrix(filtered.samples.common[[sp]]$counts.gf)      
+    } 
+  }
+
+  ## Normalize across all conditions
+  filtered.samples.common[[sp]]$log2.tmm.cpm.gf <-
+    transform_counts_to_tmm_cpm(
+      filtered.samples.common[[sp]]$counts.gf, filtered.samples.common[[sp]]$metadata,
+      log2=TRUE, shift.min=TRUE)
+  
+  # Expression specificity computations
+  ## Compute mean expression per tissue
+  filtered.samples.common[[sp]]$mean.expr <-
+    mean_expr_per_tissue(filtered.samples.common[[sp]]$log2.tmm.cpm.gf,
+                         filtered.samples.common[[sp]]$metadata)
+  
+  if (params$randomize.mean.expr==TRUE) {
+    # Shuffle mean expression vector per gene
+    filtered.samples.common[[sp]]$mean.expr <-
+      permute_by_rows(filtered.samples.common[[sp]]$mean.expr, seed=params$set.seed)
+  }
+  
+  ## Scale by maximum expression
+  filtered.samples.common[[sp]]$scaled.expr <-
+    scale_by_max_expr(filtered.samples.common[[sp]]$mean.expr)
+  
+  ## Compute tau from mean expression
+  filtered.samples.common[[sp]]$tau <-
+    compute_tau(filtered.samples.common[[sp]]$mean.expr)
+}
+```
+
+```{r tau-summary-common-conditions}
+for (sp in species) {
+  print(sp)
+  print(summary(filtered.samples.exc.skin[[sp]]$tau))
+}
+```
+
+### Plot - Tau distribution
+```{r plot-tau-distribution-common-conditions}
+for (sp in species) {
+  print(sp)
+  print(levels(as.factor(filtered.samples.common[[sp]]$metadata$Tissue)))
+  
+  summary(filtered.samples.exc.skin[[sp]]$tau)
+  if (!params$all.nonzero.matrix) {
+    plot_tau_distribution(filtered.samples.common[[sp]]$tau, prob=seq(0,1,0.25), ylim=c(0.0,2.4))    
+  } else {
+    plot_tau_distribution(filtered.samples.common[[sp]]$tau, prob=seq(0,1,0.25), ylim=c(0.0,3.6))    
+  }
+}
+```
+
+
+### Rank organs for each gene
+```{r rank-organs-common-conditions}
+## For each gene, rank conditions by expression level
+for (sp in species) {
+  filtered.samples.common[[sp]]$expr.rank <-
+    t(apply(-filtered.samples.common[[sp]]$mean.expr, MARGIN=1, rank, ties.method="max")) %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column(var="GeneID")
+  
+  filtered.samples.common[[sp]]$expr.rank.pivot <-
+    tidyr::pivot_longer(as.data.frame(filtered.samples.common[[sp]]$expr.rank),
+                        cols=any_of(colnames(filtered.samples.common[[sp]]$mean.expr)), 
+                        names_to="Tissue", values_to="ExpRank")
+  
+  filtered.samples.common[[sp]]$expr.rank.first <- filtered.samples.common[[sp]]$expr.rank.pivot %>%
+    dplyr::filter(ExpRank==1) %>%
+    dplyr::inner_join(data.frame("GeneID"=names(filtered.samples.common[[sp]]$tau),
+                                 "tau"=filtered.samples.common[[sp]]$tau),
+                      by="GeneID")
+  colnames(filtered.samples.common[[sp]]$expr.rank.first) <- c("GeneID","PrimaryTissue","ExpRank","tau")
+  filtered.samples.common[[sp]]$expr.rank.first <- 
+    filtered.samples.common[[sp]]$expr.rank.first[,c("GeneID","PrimaryTissue","tau")]
+}
+```
+
+#### Barplots - Number of genes with top expression in organ
+
+##### No tau cutoff
+```{r distribution-of-top-tissues-common-conditions}
+for (sp in species) {
+  print(barplot_top_tissue(
+    expr.rank.first=filtered.samples.common[[sp]]$expr.rank.first,
+    apply.cutoff=FALSE,
+    title=sp))
+}
+```
+
+
+##### With tau cutoff
+```{r distribution-of-top-tissues-tau-cutoff-common-conditions}
+for (sp in species) {
+  print(barplot_top_tissue(
+    expr.rank.first=filtered.samples.common[[sp]]$expr.rank.first,
+    apply.cutoff=TRUE, min.tau=params$tau.cutoff,
+    title=sp))
+}
+```
+
+# Save
+```{r save-objects}
+if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+
+# Separate per species
+if (!params$all.nonzero.matrix) {
+  ## All conditions within-species except skin
+  if (!params$randomize.mean.expr) {
+    for (sp in species) {
+      saveRDS(filtered.samples.exc.skin[[sp]],
+              file.path(params$output.rds.path, 
+                        paste(sp, "filtered.samples.exc.skin.rds", sep="_")))    
+    }    
+  } else {
+    for (sp in species) {
+      saveRDS(filtered.samples.exc.skin[[sp]],
+              file.path(params$output.rds.path,
+                        paste(sp, "filtered.samples.exc.skin", paste0("rnd",params$set.seed, ".rds"), sep="_")))
+    }
+  }
+
+  
+  ## All common conditions
+  if (!params$randomize.mean.expr) {
+    for (sp in species) {
+      saveRDS(filtered.samples.common[[sp]],
+              file.path(params$output.rds.path, 
+                        paste(sp, "filtered.samples.common.rds", sep="_")))    
+    }    
+  } else {
+    for (sp in species) {
+      saveRDS(filtered.samples.exc.skin[[sp]],
+              file.path(params$output.rds.path,
+                        paste(sp, "filtered.samples.common", paste0("rnd",params$set.seed, ".rds"), sep="_")))
+    }    
+  }
+
+} else {
+  ## All conditions within-species except skin
+  if (!params$randomize.mean.expr) {
+    for (sp in species) {
+      saveRDS(filtered.samples.exc.skin[[sp]],
+              file.path(params$output.rds.path, 
+                        paste(sp, "filtered.samples.exc.skin.nonzero.rds", sep="_")))    
+    }     
+  } else {
+    for (sp in species) {
+      saveRDS(filtered.samples.exc.skin[[sp]],
+              file.path(params$output.rds.path,
+                        paste(sp, "filtered.samples.exc.skin.nonzero", paste0("rnd",params$set.seed, ".rds"), sep="_")))
+    }    
+  }
+
+  
+  ## All common conditions
+  if (!params$randomize.mean.expr) {
+    for (sp in species) {
+      saveRDS(filtered.samples.common[[sp]],
+              file.path(params$output.rds.path, 
+                        paste(sp, "filtered.samples.common.nonzero.rds", sep="_")))    
+    }    
+  } else {
+    for (sp in species) {
+      saveRDS(filtered.samples.exc.skin[[sp]],
+              file.path(params$output.rds.path,
+                        paste(sp, "filtered.samples.common.nonzero", paste0("rnd",params$set.seed, ".rds"), sep="_")))
+    }      
+  }
+
+}
+```
+

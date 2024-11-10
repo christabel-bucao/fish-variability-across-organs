@@ -1,0 +1,29 @@
+name: fish-ev-gene-function
+channels:
+  - r
+  - conda-forge
+  - bioconda
+dependencies:
+  - openjdk # To run BRB-seqTools
+  - r-base=4.1.0
+  - r-renv
+  - r-markdown
+  - r-rmarkdown
+  - r-shiny
+  - r-tidyverse
+  - r-dplyr=1.0.9
+  - r-tibble=3.1.7
+  - r-ggplot2=3.3.6
+  - r-pillar=1.7.0
+  - r-gplots
+  - r-cowplot=1.1.1
+  - r-ggpubr=0.4.0
+  - r-viridis
+  - r-colorblindness
+  - r-vctrs=0.4.1
+  - r-matrixstats=0.62.0
+  - r-slider=0.2.2
+  #- bioconductor-edgeR=3.34.1 # Package not found
+  #- bioconductor-limma=3.48.3
+  #- bioconductor-gostats=3.58.0
+  #- bioconductor-org.Dr.eg.db=3.13.0
