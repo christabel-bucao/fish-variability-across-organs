@@ -15,7 +15,7 @@ Christabel F. Bucao<sup>1,2*</sup>, Consolée Aletti<sup>1</sup>, Sébastien Mor
 <sup>6</sup> ﻿Institute of Neuroscience, University of Oregon, Eugene, Oregon, USA
 \
 <sup>7</sup> INRAE, LPGP, Rennes 35000, France
-\
+
 <sup>*</sup> Corresponding author
 
 ## Abstract
