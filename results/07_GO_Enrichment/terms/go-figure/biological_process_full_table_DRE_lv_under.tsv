@@ -1,0 +1,103 @@
+Cluster representative	Cluster member	Cluster member description	Member P-value	Member user defined value	Member IC	Member frequency
+GO:0006364	GO:0006364	rRNA processing	2.541e-03	3.000e+00	2.160e+00	6.923e-03
+GO:0006364	GO:0016072	rRNA metabolic process	1.617e-03	3.000e+00	2.144e+00	7.172e-03
+GO:0006629	GO:0006629	lipid metabolic process	4.539e-04	3.000e+00	1.508e+00	3.104e-02
+GO:0006629	GO:0044255	cellular lipid metabolic process	2.654e-03	3.000e+00	1.646e+00	2.260e-02
+GO:0006629	GO:0008610	lipid biosynthetic process	4.828e-03	4.000e+00	1.748e+00	1.787e-02
+GO:0006629	GO:0006631	fatty acid metabolic process	2.084e-03	5.000e+00	2.062e+00	8.663e-03
+GO:0006629	GO:0032787	monocarboxylic acid metabolic process	2.848e-03	5.000e+00	1.662e+00	2.175e-02
+GO:0006629	GO:0006694	steroid biosynthetic process	3.941e-03	5.000e+00	3.446e+00	3.582e-04
+GO:0006629	GO:0008202	steroid metabolic process	5.599e-03	6.000e+00	3.199e+00	6.328e-04
+GO:0006928	GO:0006928	movement of cell or subcellular component	2.899e-04	3.000e+00	2.460e+00	3.471e-03
+GO:0006928	GO:0048870	cell motility	1.453e-03	3.000e+00	2.570e+00	2.692e-03
+GO:0006928	GO:0016477	cell migration	9.940e-04	3.000e+00	3.467e+00	3.412e-04
+GO:0006928	GO:0060326	cell chemotaxis	5.883e-03	3.000e+00	4.026e+00	9.426e-05
+GO:0006928	GO:0030593	neutrophil chemotaxis	3.147e-03	3.000e+00	4.824e+00	1.501e-05
+GO:0006928	GO:1990266	neutrophil migration	2.799e-03	3.000e+00	4.749e+00	1.781e-05
+GO:0006928	GO:0006935	chemotaxis	4.170e-03	3.000e+00	2.602e+00	2.502e-03
+GO:0006928	GO:0040011	locomotion	3.363e-03	4.000e+00	2.291e+00	5.114e-03
+GO:0006936	GO:0003012	muscle system process	2.336e-03	5.000e+00	4.162e+00	6.882e-05
+GO:0006936	GO:0006936	muscle contraction	2.123e-03	5.000e+00	4.241e+00	5.742e-05
+GO:0006936	GO:0006941	striated muscle contraction	4.305e-03	5.000e+00	4.764e+00	1.721e-05
+GO:0006936	GO:0050817	coagulation	5.634e-03	3.000e+00	4.107e+00	7.814e-05
+GO:0006936	GO:0032501	multicellular organismal process	3.697e-03	6.000e+00	2.515e+00	3.058e-03
+GO:0006936	GO:0060048	cardiac muscle contraction	4.854e-03	3.000e+00	4.999e+00	1.003e-05
+GO:0006936	GO:0032504	multicellular organism reproduction	2.172e-03	5.000e+00	5.369e+00	4.272e-06
+GO:0006936	GO:0019953	sexual reproduction	2.497e-03	4.000e+00	4.821e+00	1.511e-05
+GO:0006936	GO:0044703	multi-organism reproductive process	2.497e-03	4.000e+00	4.590e+00	2.571e-05
+GO:0006952	GO:0006952	defense response	7.316e-04	4.000e+00	2.624e+00	2.377e-03
+GO:0006952	GO:0098542	defense response to other organism	4.074e-03	4.000e+00	2.731e+00	1.859e-03
+GO:0006952	GO:0006954	inflammatory response	2.114e-03	4.000e+00	3.790e+00	1.621e-04
+GO:0006952	GO:0051707	response to other organism	2.396e-03	6.000e+00	2.233e+00	5.850e-03
+GO:0006952	GO:0043207	response to external biotic stimulus	2.396e-03	6.000e+00	2.228e+00	5.918e-03
+GO:0006952	GO:0009605	response to external stimulus	2.043e-03	5.000e+00	2.041e+00	9.108e-03
+GO:0006952	GO:0009607	response to biotic stimulus	2.298e-03	6.000e+00	2.209e+00	6.186e-03
+GO:0006952	GO:0044419	biological process involved in interspecies interaction between organisms	1.529e-03	5.000e+00	1.403e+00	3.951e-02
+GO:0006952	GO:0050896	response to stimulus	3.123e-03	5.000e+00	1.401e+00	3.974e-02
+GO:0006952	GO:0042221	response to chemical	1.532e-03	4.000e+00	2.478e+00	3.327e-03
+GO:0006952	GO:0009410	response to xenobiotic stimulus	4.982e-03	3.000e+00	4.712e+00	1.939e-05
+GO:0006952	GO:0070887	cellular response to chemical stimulus	3.604e-03	6.000e+00	3.172e+00	6.723e-04
+GO:0006955	GO:0006955	immune response	1.066e-03	9.000e+00	3.058e+00	8.750e-04
+GO:0006955	GO:0045087	innate immune response	4.969e-03	3.000e+00	3.645e+00	2.264e-04
+GO:0006955	GO:0006956	complement activation	5.141e-03	6.000e+00	4.234e+00	5.840e-05
+GO:0006955	GO:0006959	humoral immune response	4.400e-03	5.000e+00	4.054e+00	8.837e-05
+GO:0007155	GO:0007155	cell adhesion	2.870e-03	4.000e+00	2.689e+00	2.048e-03
+GO:0007155	GO:0022610	biological adhesion	2.870e-03	4.000e+00	2.307e+00	4.932e-03
+GO:0007167	GO:0007166	cell surface receptor signaling pathway	2.022e-03	3.000e+00	2.698e+00	2.002e-03
+GO:0007167	GO:0007167	enzyme linked receptor protein signaling pathway	3.316e-03	3.000e+00	3.324e+00	4.746e-04
+GO:0007167	GO:0070098	chemokine-mediated signaling pathway	6.919e-03	3.000e+00	4.295e+00	5.069e-05
+GO:0007276	GO:0007276	gamete generation	1.591e-03	5.000e+00	3.853e+00	1.403e-04
+GO:0007276	GO:0048609	multicellular organismal reproductive process	2.048e-03	5.000e+00	3.758e+00	1.746e-04
+GO:0007276	GO:0048232	male gamete generation	4.692e-03	3.000e+00	3.980e+00	1.046e-04
+GO:0007276	GO:0007281	germ cell development	1.927e-03	3.000e+00	4.202e+00	6.284e-05
+GO:0007276	GO:0022412	cellular process involved in reproduction in multicellular organism	3.263e-03	4.000e+00	3.704e+00	1.976e-04
+GO:0007276	GO:0003006	developmental process involved in reproduction	2.014e-03	4.000e+00	3.320e+00	4.789e-04
+GO:0007276	GO:0022414	reproductive process	2.644e-03	3.000e+00	2.754e+00	1.760e-03
+GO:0007599	GO:0007599	hemostasis	6.826e-03	3.000e+00	3.961e+00	1.094e-04
+GO:0007599	GO:0050878	regulation of body fluid levels	6.567e-03	3.000e+00	3.785e+00	1.642e-04
+GO:0009117	GO:0006753	nucleoside phosphate metabolic process	6.027e-03	3.000e+00	1.381e+00	4.159e-02
+GO:0009117	GO:0009117	nucleotide metabolic process	5.795e-03	3.000e+00	1.391e+00	4.063e-02
+GO:0009117	GO:0055086	nucleobase-containing small molecule metabolic process	3.905e-03	4.000e+00	1.298e+00	5.040e-02
+GO:0009653	GO:0009653	anatomical structure morphogenesis	4.031e-03	3.000e+00	2.870e+00	1.350e-03
+GO:0009653	GO:0032502	developmental process	2.714e-03	3.000e+00	2.145e+00	7.169e-03
+GO:0009653	GO:0030154	cell differentiation	4.783e-03	3.000e+00	2.842e+00	1.438e-03
+GO:0009653	GO:0048869	cellular developmental process	4.867e-03	3.000e+00	2.704e+00	1.975e-03
+GO:0019318	GO:0005996	monosaccharide metabolic process	4.270e-03	3.000e+00	2.216e+00	6.080e-03
+GO:0019318	GO:0019318	hexose metabolic process	5.339e-03	3.000e+00	2.329e+00	4.683e-03
+GO:0019318	GO:0005975	carbohydrate metabolic process	2.308e-03	3.000e+00	1.397e+00	4.005e-02
+GO:0019318	GO:0044281	small molecule metabolic process	1.377e-03	7.000e+00	7.850e-01	1.640e-01
+GO:0030517	GO:0030517	negative regulation of axon extension	6.315e-03	3.000e+00	5.052e+00	8.880e-06
+GO:0030517	GO:0050771	negative regulation of axonogenesis	6.315e-03	3.000e+00	4.926e+00	1.186e-05
+GO:0030517	GO:0048640	negative regulation of developmental growth	4.108e-03	3.000e+00	4.548e+00	2.828e-05
+GO:0030517	GO:0051241	negative regulation of multicellular organismal process	3.443e-03	4.000e+00	3.491e+00	3.232e-04
+GO:0030517	GO:0051239	regulation of multicellular organismal process	1.815e-03	4.000e+00	2.903e+00	1.249e-03
+GO:0030517	GO:0010466	negative regulation of peptidase activity	4.855e-03	6.000e+00	3.141e+00	7.224e-04
+GO:0030517	GO:0051346	negative regulation of hydrolase activity	5.252e-03	5.000e+00	3.023e+00	9.485e-04
+GO:0030517	GO:0043086	negative regulation of catalytic activity	5.465e-03	6.000e+00	2.818e+00	1.522e-03
+GO:0030517	GO:0044092	negative regulation of molecular function	3.199e-03	4.000e+00	2.449e+00	3.559e-03
+GO:0030517	GO:0048523	negative regulation of cellular process	5.063e-03	4.000e+00	2.100e+00	7.936e-03
+GO:0030517	GO:0010977	negative regulation of neuron projection development	2.930e-03	3.000e+00	4.585e+00	2.601e-05
+GO:0030517	GO:0031345	negative regulation of cell projection organization	2.364e-03	3.000e+00	4.276e+00	5.291e-05
+GO:0042060	GO:0009611	response to wounding	4.408e-03	5.000e+00	4.227e+00	5.935e-05
+GO:0042060	GO:0042060	wound healing	2.462e-03	3.000e+00	4.815e+00	1.530e-05
+GO:0042254	GO:0022613	ribonucleoprotein complex biogenesis	1.842e-03	3.000e+00	2.543e+00	2.867e-03
+GO:0042254	GO:0042254	ribosome biogenesis	4.543e-04	3.000e+00	2.662e+00	2.178e-03
+GO:0042254	GO:0042273	ribosomal large subunit biogenesis	5.984e-03	3.000e+00	4.063e+00	8.654e-05
+GO:0046395	GO:0016054	organic acid catabolic process	4.829e-03	3.000e+00	2.187e+00	6.506e-03
+GO:0046395	GO:0046395	carboxylic acid catabolic process	4.987e-03	4.000e+00	2.202e+00	6.287e-03
+GO:0046395	GO:0044282	small molecule catabolic process	2.964e-03	3.000e+00	2.048e+00	8.963e-03
+GO:0046395	GO:0019752	carboxylic acid metabolic process	1.085e-03	5.000e+00	1.049e+00	8.923e-02
+GO:0046395	GO:0043436	oxoacid metabolic process	1.095e-03	5.000e+00	1.046e+00	9.005e-02
+GO:0046395	GO:0006082	organic acid metabolic process	1.081e-03	6.000e+00	1.015e+00	9.658e-02
+GO:0046395	GO:0044283	small molecule biosynthetic process	2.949e-03	6.000e+00	1.116e+00	7.660e-02
+GO:0050776	GO:0032102	negative regulation of response to external stimulus	4.400e-03	3.000e+00	3.224e+00	5.973e-04
+GO:0050776	GO:0050776	regulation of immune response	1.999e-03	4.000e+00	2.595e+00	2.544e-03
+GO:0050776	GO:0032101	regulation of response to external stimulus	4.149e-03	4.000e+00	3.073e+00	8.458e-04
+GO:0050776	GO:0002253	activation of immune response	5.599e-03	4.000e+00	3.939e+00	1.152e-04
+GO:0050776	GO:0050778	positive regulation of immune response	5.638e-03	3.000e+00	3.736e+00	1.835e-04
+GO:1990869	GO:1990868	response to chemokine	6.939e-03	4.000e+00	5.429e+00	3.727e-06
+GO:1990869	GO:1990869	cellular response to chemokine	6.939e-03	4.000e+00	5.429e+00	3.727e-06
+GO:1990869	GO:1901700	response to oxygen-containing compound	4.206e-03	3.000e+00	3.278e+00	5.272e-04
+GO:1990869	GO:0071310	cellular response to organic substance	2.975e-03	4.000e+00	3.417e+00	3.826e-04
+GO:1990869	GO:0009725	response to hormone	7.078e-03	3.000e+00	3.598e+00	2.523e-04
+GO:1990869	GO:0010033	response to organic substance	4.259e-03	3.000e+00	2.994e+00	1.013e-03

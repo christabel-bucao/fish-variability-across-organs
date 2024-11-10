@@ -1,0 +1,15 @@
+GO-Figure! version: 1.0
+
+Date run: 2024-11-08
+
+Command line input: ['./gofigure-mac', '--input', '../../results/07_GO_Enrichment/terms/DRE_mv_over.txt', '--input_type', 'standard-plus', '--output', '../../results/07_GO_Enrichment/terms/go-figure', '--outfile_appendix', 'DRE_mv_over', '--size', 'members', '--colours', 'user', '--sort_by', 'user-descending', '--colour_label', 'Number of conditions', '--max_label', '20', '--ontology', 'bpo']
+
+GOA version used to calculate IC and frequencies: 2020-10-06
+
+go.obo version used: releases/2020-11-18
+
+go.obo version used to create GO relations: releases/2021-02-01
+
+
+Calculating biological process
+
