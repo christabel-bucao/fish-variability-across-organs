@@ -1,10 +1,12 @@
 # Ignore directories
 /bin/
+/data/counts/
 /data/fastq/
 /docs/
 /trash/
 /workflow/.Rproj.user/
 /workflow/.snakemake/
+/zenodo/
 
 # Ignore files
 .DS_Store
