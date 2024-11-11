@@ -49,3 +49,5 @@ Phenotypic variation among individuals plays a key role in evolution, since vari
 - **ELU**: *Esox lucius* (Northern pike)
 - **DRE**: *Danio rerio* (zebrafish)
 
+## Links
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14063787.svg)](https://doi.org/10.5281/zenodo.14063787)
