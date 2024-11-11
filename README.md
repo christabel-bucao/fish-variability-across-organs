@@ -42,7 +42,7 @@ Phenotypic variation among individuals plays a key role in evolution, since vari
   - `run_go_figure.sh`: Runs [GO-Figure!](https://gitlab.com/evogenlab/GO-Figure) 1.0.0 (downloaded separately)
   - `demultiplex_brbseq_fastq.sh`: Used for demultiplexing BRB-seq fastq files using [BRB-seqTools](https://github.com/DeplanckeLab/BRB-seqTools) 1.6.1 (downloaded separately) for uploading to NCBI SRA
   - `rename_fastq_files.sh`: Used for renaming demultiplexed fastq files by mapping each barcode to their corresponding sample name
-  - `renv.lock`: Lockfile for managing R package versions
+  - `renv.lock`: Lockfile for managing R package versions. Run `renv::restore()` to set up the R environment based on packages specified in the lockfile. All package versions used are also specified in the output HTML files under results/.
 
 ## Species Codes
 - **LOC**: *Lepisosteus oculatus* (spotted gar)
