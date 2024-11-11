@@ -41,7 +41,7 @@ Phenotypic variation among individuals plays a key role in evolution, since vari
   - `run_pipeline.R`: Runs all the steps under analysis/
   - `run_go_figure.sh`: Runs [GO-Figure!](https://gitlab.com/evogenlab/GO-Figure) 1.0.0 (downloaded separately)
   - `demultiplex_brbseq_fastq.sh`: Used for demultiplexing BRB-seq fastq files using [BRB-seqTools](https://github.com/DeplanckeLab/BRB-seqTools) 1.6.1 (downloaded separately) for uploading to NCBI SRA
-  - `rename_fastq_files.sh`: Used for renaming demultiplexed fastq files by mapping the barcode to sample names
+  - `rename_fastq_files.sh`: Used for renaming demultiplexed fastq files by mapping each barcode to their corresponding sample name
   - `renv.lock`: Lockfile for managing R package versions
 
 ## Species Codes
