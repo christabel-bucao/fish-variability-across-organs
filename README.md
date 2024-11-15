@@ -50,4 +50,7 @@ Phenotypic variation among individuals plays a key role in evolution, since vari
 - **DRE**: *Danio rerio* (zebrafish)
 
 ## Links
+**2024-11-12:** Check out the [preprint](https://doi.org/10.1101/2024.11.11.623020)!
+
+
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14063787.svg)](https://doi.org/10.5281/zenodo.14063787)
