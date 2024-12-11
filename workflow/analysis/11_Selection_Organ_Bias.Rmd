@@ -66,6 +66,15 @@ selection.tau.tissue$TissueBias <-
 # Only organ-biased genes
 selection.tau.tissue.biased <- selection.tau.tissue %>%
   dplyr::filter(tau > params$tau.cutoff)
+
+# Group by GeneID
+## The estimated omega0 is the same across all branches of each gene tree
+selection.tau.tissue.groupby.gene <- selection.tau.tissue %>%
+  dplyr::group_by(GeneID, PrimaryTissue, tau, TissueBias) %>%
+  dplyr::summarise(
+    omega0 = mean(omega0)
+  ) %>%
+  dplyr::ungroup()
 ```
 
 ## Strength of purifying selection
@@ -75,6 +84,27 @@ selection.tau.tissue.biased <- selection.tau.tissue %>%
 comparisons <- list(c("brain","broad"))
 
 ggplot(selection.tau.tissue, 
+       aes(x=reorder(TissueBias, omega0, FUN=median, na.rm=TRUE), 
+           y=omega0)) +
+  stat_boxplot(geom='errorbar') +
+  geom_boxplot(notch=TRUE) +
+  ylim(c(-0.01,0.50)) +
+      stat_summary(fun.data=annotate_n, geom="text", fun=median, 
+                   position= position_dodge(width = 0.75), size=5) +      
+      stat_summary(fun.data=annotate_median, geom="text", fun=median, 
+                   position=position_dodge(width = 0.75), size=5) +
+  stat_compare_means(aes(label=..p.signif..),
+                     test="wilcox.test",
+                     comparisons=comparisons,
+                     label.y=0.40, size=7) +
+  labs(title=params$species.name,
+       x="Organ bias", y="ω0 (dN/dS < 1)") +
+  theme_bw() +
+  theme(plot.title=element_text(size=20, face="italic"),
+        axis.title=element_text(size=18),
+        axis.text=element_text(size=14))
+
+ggplot(selection.tau.tissue.groupby.gene, 
        aes(x=reorder(TissueBias, omega0, FUN=median, na.rm=TRUE), 
            y=omega0)) +
   stat_boxplot(geom='errorbar') +
@@ -108,5 +138,9 @@ saveRDS(selection.tau.tissue,
 saveRDS(selection.tau.tissue.biased,
         file.path(params$output.rds.path, 
                   paste(params$species, "selection.tau.tissue.biased.rds", sep="_")))
+
+saveRDS(selection.tau.tissue.groupby.gene,
+        file.path(params$output.rds.path, 
+                  paste(params$species, "selection.tau.tissue.groupby.gene.rds", sep="_")))
 ```
 
