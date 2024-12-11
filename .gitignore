@@ -18,3 +18,4 @@
 *.Rdata
 *_with_branch_length.res.txt
 *.tar.gz
+.Rproj.user
