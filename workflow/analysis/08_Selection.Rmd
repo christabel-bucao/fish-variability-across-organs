@@ -157,14 +157,23 @@ selectome.sub.bind <-
 selectome.sub.bind$EV <- 
   factor(selectome.sub.bind$EV, levels=c("LV","MV","HV"), labels=c("low","mid","high"))
 
+# Group by GeneID
+## The estimated omega0 is the same across all branches of each gene tree
+selectome.sub.bind.groupby.gene <- selectome.sub.bind %>%
+  dplyr::group_by(EV,GeneID) %>%
+  dplyr::summarise(
+    omega0 = mean(omega0)
+  ) %>%
+  dplyr::ungroup()
+
 # Branches
 print(levels(as.factor(selectome.sub$Bgd$Taxon)))
 ```
 
 ### Purifying selection
 ```{r boxplot-omega0, fig.width=8, fig.height=10}
-boxplot_omega0(selectome.sub.bind, title=params$species.name)
-boxplot_omega0(selectome.sub.bind, compare.means=TRUE, title=params$species.name)
+boxplot_omega0(selectome.sub.bind.groupby.gene, title=params$species.name)
+boxplot_omega0(selectome.sub.bind.groupby.gene, compare.means=TRUE, title=params$species.name)
 ```
 
 ### Positive selection
