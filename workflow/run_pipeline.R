@@ -493,7 +493,10 @@ if (!dir.exists(step11.selection.organ.bias$output.dir)) {
 step11.selection.organ.bias$params <- list(
   list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30),
   list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30)
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50)
 )
 
 ##### Run analysis script #####
@@ -505,7 +508,8 @@ for (p in (1:length(step11.selection.organ.bias$params))) {
     params=step11.selection.organ.bias$params[[p]],
     output_file=file.path(
       "..", step11.selection.organ.bias$output.dir,
-      paste(step11.selection.organ.bias$params[[p]]$species, ".html", sep="")))   
+      paste(step11.selection.organ.bias$params[[p]]$species,
+            paste0("tau", step11.selection.organ.bias$params[[p]]$tau.cutoff, ".html"), sep="_")))
 }
 
 # Clear workspace

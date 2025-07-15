@@ -133,14 +133,20 @@ if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, sh
 
 saveRDS(selection.tau.tissue,
         file.path(params$output.rds.path, 
-                  paste(params$species, "selection.tau.tissue.rds", sep="_")))
+                  paste(params$species, 
+                        paste("selection", paste0("tau", params$tau.cutoff),
+                              "tissue", "rds", sep="."), sep="_")))
 
 saveRDS(selection.tau.tissue.biased,
         file.path(params$output.rds.path, 
-                  paste(params$species, "selection.tau.tissue.biased.rds", sep="_")))
+                  paste(params$species, 
+                        paste("selection", paste0("tau", params$tau.cutoff),
+                              "tissue.biased", "rds", sep="."), sep="_")))
 
 saveRDS(selection.tau.tissue.groupby.gene,
         file.path(params$output.rds.path, 
-                  paste(params$species, "selection.tau.tissue.groupby.gene.rds", sep="_")))
+                  paste(params$species, 
+                        paste("selection", paste0("tau", params$tau.cutoff),
+                              "tissue.groupby.gene", "rds", sep="."), sep="_")))
 ```
 
