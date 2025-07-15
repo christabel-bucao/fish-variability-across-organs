@@ -417,7 +417,11 @@ step10.expression.specificity$params <- list(
   list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE),
   list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE),
   list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890)
+  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890),
+  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345),
+  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890)
 )
 
 ##### Run analysis script #####
@@ -429,7 +433,8 @@ for (p in (1:length(step10.expression.specificity$params))) {
         params=step10.expression.specificity$params[[p]],
         output_file=file.path(
           "..", step10.expression.specificity$output.dir,
-          paste("LOC_ELU_DRE.html", sep="")))
+          paste("LOC_ELU_DRE",
+                paste0("tau", step10.expression.specificity$params[[p]]$tau.cutoff, ".html"), sep="_")))
       
     } else {
       rmarkdown::render(
@@ -437,9 +442,11 @@ for (p in (1:length(step10.expression.specificity$params))) {
         params=step10.expression.specificity$params[[p]],
         output_file=file.path(
           "..", step10.expression.specificity$output.dir,
-          paste("LOC_ELU_DRE", paste0("rnd", step10.expression.specificity$params[[p]]$set.seed, ".html"), sep="_")))       
+          paste("LOC_ELU_DRE",
+                paste0("tau", step10.expression.specificity$params[[p]]$tau.cutoff),
+                paste0("rnd", step10.expression.specificity$params[[p]]$set.seed, ".html"), sep="_")))
     }
-   
+    
   } else {
     if (step10.expression.specificity$params[[p]]$randomize.mean.expr==FALSE) {
       rmarkdown::render(
@@ -447,7 +454,8 @@ for (p in (1:length(step10.expression.specificity$params))) {
         params=step10.expression.specificity$params[[p]],
         output_file=file.path(
           "..", step10.expression.specificity$output.dir,
-          paste("LOC_ELU_DRE", "nonzero.html", sep="_")))
+          paste("LOC_ELU_DRE", "nonzero",
+                paste0("tau", step10.expression.specificity$params[[p]]$tau.cutoff, ".html"), sep="_")))
       
     } else {
       rmarkdown::render(
@@ -455,7 +463,9 @@ for (p in (1:length(step10.expression.specificity$params))) {
         params=step10.expression.specificity$params[[p]],
         output_file=file.path(
           "..", step10.expression.specificity$output.dir,
-          paste("LOC_ELU_DRE", "nonzero", paste0("rnd", step10.expression.specificity$params[[p]]$set.seed, ".html"), sep="_"))) 
+          paste("LOC_ELU_DRE", "nonzero",
+                paste0("tau", step10.expression.specificity$params[[p]]$tau.cutoff),
+                paste0("rnd", step10.expression.specificity$params[[p]]$set.seed, ".html"), sep="_")))
       
     }
   }
