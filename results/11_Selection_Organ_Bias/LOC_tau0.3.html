@@ -11,7 +11,7 @@
 
 <meta name="author" content="Bucao, Christabel Floi" />
 
-<meta name="date" content="2024-12-11" />
+<meta name="date" content="2025-07-15" />
 
 <title>Selection on organ-biased genes (Lepisosteus oculatus)</title>
 
@@ -353,7 +353,7 @@ display: none;
 <h1 class="title toc-ignore">Selection on organ-biased genes
 (<em>Lepisosteus oculatus</em>)</h1>
 <h4 class="author">Bucao, Christabel Floi</h4>
-<h4 class="date">2024-12-11</h4>
+<h4 class="date">2025-07-15</h4>
 
 </div>
 
@@ -494,15 +494,21 @@ ggplot(selection.tau.tissue,
 
 saveRDS(selection.tau.tissue,
         file.path(params$output.rds.path, 
-                  paste(params$species, &quot;selection.tau.tissue.rds&quot;, sep=&quot;_&quot;)))
+                  paste(params$species, 
+                        paste(&quot;selection&quot;, paste0(&quot;tau&quot;, params$tau.cutoff),
+                              &quot;tissue&quot;, &quot;rds&quot;, sep=&quot;.&quot;), sep=&quot;_&quot;)))
 
 saveRDS(selection.tau.tissue.biased,
         file.path(params$output.rds.path, 
-                  paste(params$species, &quot;selection.tau.tissue.biased.rds&quot;, sep=&quot;_&quot;)))
+                  paste(params$species, 
+                        paste(&quot;selection&quot;, paste0(&quot;tau&quot;, params$tau.cutoff),
+                              &quot;tissue.biased&quot;, &quot;rds&quot;, sep=&quot;.&quot;), sep=&quot;_&quot;)))
 
 saveRDS(selection.tau.tissue.groupby.gene,
         file.path(params$output.rds.path, 
-                  paste(params$species, &quot;selection.tau.tissue.groupby.gene.rds&quot;, sep=&quot;_&quot;)))</code></pre>
+                  paste(params$species, 
+                        paste(&quot;selection&quot;, paste0(&quot;tau&quot;, params$tau.cutoff),
+                              &quot;tissue.groupby.gene&quot;, &quot;rds&quot;, sep=&quot;.&quot;), sep=&quot;_&quot;)))</code></pre>
 </div>
 
 
