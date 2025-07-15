@@ -5,7 +5,7 @@ BiocManager::install(version="3.13", force=TRUE)
 renv::restore() # Restore CRAN package versions specified in conda environment
 BiocManager::install(c("edgeR","limma","GOstats","org.Dr.eg.db"), force=TRUE)
 BiocManager::install(
-  c("KEGGREST","genefilter","Category","RBGL","Rgraphviz","BiocGenerics", 
+  c("KEGGREST","genefilter","Category","RBGL","Rgraphviz","BiocGenerics",
     "zlibbioc","Biostrings","Biobase","IRanges","GenomeInfoDb","AnnotationDbi",
     "GSEABase","S4Vectors", "graph","annotate","XVector","GO.db","AnnotationForge"),
   force=TRUE) # For consistency, other packages should have the same Bioconductor version
@@ -76,7 +76,7 @@ if (!dir.exists(step02.variability.jackknife$output.dir)) {
 
 # List parameters
 step02.variability.jackknife$params <- list(
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"), 
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
   list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, run.example=FALSE),
   list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, run.example=FALSE),
   list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, run.example=FALSE),
@@ -100,14 +100,14 @@ for (p in (1:length(step02.variability.jackknife$params))) {
         params=step02.variability.jackknife$params[[p]],
         output_file=file.path(
           "..", step02.variability.jackknife$output.dir,
-          paste(step02.variability.jackknife$params[[p]]$species, "example.html", sep="_")))        
+          paste(step02.variability.jackknife$params[[p]]$species, "example.html", sep="_")))
     } else {
       rmarkdown::render(
         input=step02.variability.jackknife$input,
         params=step02.variability.jackknife$params[[p]],
         output_file=file.path(
           "..", step02.variability.jackknife$output.dir,
-          paste(step02.variability.jackknife$params[[p]]$species, ".html", sep="")))    
+          paste(step02.variability.jackknife$params[[p]]$species, ".html", sep="")))
     }    
   } else {
     if (step02.variability.jackknife$params[[p]]$run.example==TRUE) {
@@ -116,14 +116,14 @@ for (p in (1:length(step02.variability.jackknife$params))) {
         params=step02.variability.jackknife$params[[p]],
         output_file=file.path(
           "..", step02.variability.jackknife$output.dir,
-          paste(step02.variability.jackknife$params[[p]]$species, "nonzero", "example.html", sep="_")))        
+          paste(step02.variability.jackknife$params[[p]]$species, "nonzero", "example.html", sep="_")))
     } else {
       rmarkdown::render(
         input=step02.variability.jackknife$input,
         params=step02.variability.jackknife$params[[p]],
         output_file=file.path(
           "..", step02.variability.jackknife$output.dir,
-          paste(step02.variability.jackknife$params[[p]]$species, "nonzero.html", sep="_")))    
+          paste(step02.variability.jackknife$params[[p]]$species, "nonzero.html", sep="_")))
     }     
   }
 }
@@ -166,14 +166,14 @@ for (p in (1:length(step03.variability.plots$params))) {
       params=step03.variability.plots$params[[p]],
       output_file=file.path(
         "..", step03.variability.plots$output.dir,
-        paste(step03.variability.plots$params[[p]]$species, ".html", sep="")))    
+        paste(step03.variability.plots$params[[p]]$species, ".html", sep="")))
   } else {
     rmarkdown::render(
       input=step03.variability.plots$input,
       params=step03.variability.plots$params[[p]],
       output_file=file.path(
         "..", step03.variability.plots$output.dir,
-        paste(step03.variability.plots$params[[p]]$species, "nonzero.html", sep="_")))    
+        paste(step03.variability.plots$params[[p]]$species, "nonzero.html", sep="_")))
   }
 }
 
@@ -215,14 +215,14 @@ for (p in (1:length(step04.correlation.conditions$params))) {
       params=step04.correlation.conditions$params[[p]],
       output_file=file.path(
         "..", step04.correlation.conditions$output.dir,
-        paste(step04.correlation.conditions$params[[p]]$species, ".html", sep="")))    
+        paste(step04.correlation.conditions$params[[p]]$species, ".html", sep="")))
   } else {
     rmarkdown::render(
       input=step04.correlation.conditions$input,
       params=step04.correlation.conditions$params[[p]],
       output_file=file.path(
         "..", step04.correlation.conditions$output.dir,
-        paste(step04.correlation.conditions$params[[p]]$species, "nonzero.html", sep="_")))    
+        paste(step04.correlation.conditions$params[[p]]$species, "nonzero.html", sep="_")))
   }
 }
 
@@ -260,7 +260,7 @@ for (p in (1:length(step05.bimodality.test$params))) {
     params=step05.bimodality.test$params[[p]],
     output_file=file.path(
       "..", step05.bimodality.test$output.dir,
-      paste(step05.bimodality.test$params[[p]]$species, ".html", sep="")))   
+      paste(step05.bimodality.test$params[[p]]$species, ".html", sep="")))
 }
 
 # Clear workspace
@@ -295,7 +295,7 @@ for (p in (1:length(step06.simulated.bimodality$params))) {
     params=step06.simulated.bimodality$params[[p]],
     output_file=file.path(
       "..", step06.simulated.bimodality$output.dir,
-      paste(step06.simulated.bimodality$params[[p]]$species, ".html", sep="")))   
+      paste(step06.simulated.bimodality$params[[p]]$species, ".html", sep="")))
 }
 
 # Clear workspace
@@ -329,7 +329,7 @@ for (p in (1:length(step07.go.enrichment$params))) {
     params=step07.go.enrichment$params[[p]],
     output_file=file.path(
       "..", step07.go.enrichment$output.dir,
-      paste(step07.go.enrichment$params[[p]]$species, ".html", sep="")))   
+      paste(step07.go.enrichment$params[[p]]$species, ".html", sep="")))
 }
 # The output for this step is used to run GO-Figure! outside of R
 # see run_go_figure.sh
@@ -367,7 +367,7 @@ for (p in (1:length(step08.selection$params))) {
     params=step08.selection$params[[p]],
     output_file=file.path(
       "..", step08.selection$output.dir,
-      paste(step08.selection$params[[p]]$species, ".html", sep="")))   
+      paste(step08.selection$params[[p]]$species, ".html", sep="")))
 }
 
 # Clear workspace
@@ -542,7 +542,19 @@ step12.organ.bias$params <- list(
   list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=12345),
   list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890),
   list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890)
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=12345),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=12345),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=12345),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890)
 )
 
 ##### Run analysis script #####
@@ -556,7 +568,8 @@ for (p in (1:length(step12.organ.bias$params))) {
         params=step12.organ.bias$params[[p]],
         output_file=file.path(
           "..", step12.organ.bias$output.dir,
-          paste(step12.organ.bias$params[[p]]$species, ".html", sep="")))
+          paste(step12.organ.bias$params[[p]]$species,
+                paste0("tau", step12.organ.bias$params[[p]]$tau.cutoff, ".html"), sep="_")))
       
     } else {
       rmarkdown::render(
@@ -565,8 +578,9 @@ for (p in (1:length(step12.organ.bias$params))) {
         output_file=file.path(
           "..", step12.organ.bias$output.dir,
           paste(step12.organ.bias$params[[p]]$species,
+                paste0("tau", step12.organ.bias$params[[p]]$tau.cutoff),
                 paste0("rnd", step12.organ.bias$params[[p]]$seed.run, ".html"), sep="_")))
-
+      
     }
   } else {
     if (step12.organ.bias$params[[p]]$randomized.mean.expr==FALSE) {
@@ -575,7 +589,8 @@ for (p in (1:length(step12.organ.bias$params))) {
         params=step12.organ.bias$params[[p]],
         output_file=file.path(
           "..", step12.organ.bias$output.dir,
-          paste(step12.organ.bias$params[[p]]$species, "nonzero.html", sep="_")))
+          paste(step12.organ.bias$params[[p]]$species, "nonzero",
+                paste0("tau", step12.organ.bias$params[[p]]$tau.cutoff, ".html"), sep="_")))
       
     } else {
       rmarkdown::render(
@@ -583,7 +598,8 @@ for (p in (1:length(step12.organ.bias$params))) {
         params=step12.organ.bias$params[[p]],
         output_file=file.path(
           "..", step12.organ.bias$output.dir,
-          paste(step12.organ.bias$params[[p]]$species, "nonzero", 
+          paste(step12.organ.bias$params[[p]]$species, "nonzero",
+                paste0("tau", step12.organ.bias$params[[p]]$tau.cutoff),
                 paste0("rnd", step12.organ.bias$params[[p]]$seed.run, ".html"), sep="_")))
       
     }
