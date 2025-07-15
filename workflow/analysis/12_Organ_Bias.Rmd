@@ -676,76 +676,85 @@ if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, sh
 if (!params$all.nonzero.matrix) {
   saveRDS(expr.var.rank.common,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.rank.common.rds", sep="_")))
+                    paste(params$species, "expr.var.rank.common",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.bias.by.condition,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.bias.by.condition.rds", sep="_")))
+                    paste(params$species, "expr.var.bias.by.condition",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.brain.bias,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.brain.bias.rds", sep="_")))
+                    paste(params$species, "expr.var.brain.bias",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.liver.bias,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.liver.bias.rds", sep="_")))
+                    paste(params$species, "expr.var.liver.bias",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))             
   
   saveRDS(expr.var.bias.comparisons,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.bias.comparisons.rds", sep="_")))
+                    paste(params$species, "expr.var.bias.comparisons",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   
   saveRDS(comparisons.mean.expr,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.mean.expr.rds", sep="_")))
+                    paste(params$species, "comparisons.mean.expr",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   
   saveRDS(comparisons.log2cv,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.log2cv.rds", sep="_")))
-  
+                    paste(params$species, "comparisons.log2cv",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   saveRDS(comparisons.resid.var,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.resid.var.rds", sep="_")))
+                    paste(params$species, "comparisons.resid.var",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
 
   saveRDS(comparisons.expr.var,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.expr.var.rds", sep="_")))
-  
+                    paste(params$species, "comparisons.expr.var",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
 } else {
   saveRDS(expr.var.rank.common,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.rank.common.nonzero.rds", sep="_")))
-  
+                    paste(params$species, "expr.var.rank.common.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   saveRDS(expr.var.bias.by.condition,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.bias.by.condition.nonzero.rds", sep="_")))
+                    paste(params$species, "expr.var.bias.by.condition.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))             
   
   saveRDS(expr.var.brain.bias,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.brain.bias.nonzero.rds", sep="_")))
-  
+                    paste(params$species, "expr.var.brain.bias.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   saveRDS(expr.var.liver.bias,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.liver.bias.nonzero.rds", sep="_")))
-  
+                    paste(params$species, "expr.var.liver.bias.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   saveRDS(expr.var.bias.comparisons,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.bias.comparisons.nonzero.rds", sep="_")))
-  
+                    paste(params$species, "expr.var.bias.comparisons.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                        
   saveRDS(comparisons.mean.expr,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.mean.expr.nonzero.rds", sep="_")))
-  
+                    paste(params$species, "comparisons.mean.expr.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   saveRDS(comparisons.log2cv,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.log2cv.nonzero.rds", sep="_")))
-  
+                    paste(params$species, "comparisons.log2cv.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   saveRDS(comparisons.resid.var,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.resid.var.nonzero.rds", sep="_")))
-
+                    paste(params$species, "comparisons.resid.var.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                          
   saveRDS(comparisons.expr.var,
           file.path(params$output.rds.path, 
-                    paste(params$species, "comparisons.expr.var.nonzero.rds", sep="_")))
+                    paste(params$species, "comparisons.expr.var.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))             
 }
 ```
 
@@ -757,12 +766,14 @@ if (!params$all.nonzero.matrix) {
   saveRDS(expr.var.rank.common,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.rank.common", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
 
   saveRDS(expr.var.bias.by.condition,
           file.path(params$output.rds.path, 
-                    paste(params$species, "expr.var.bias.by.condition", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                    paste(params$species, "expr.var.bias.by.condition",
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.brain.bias,
           file.path(params$output.rds.path, 
@@ -772,78 +783,93 @@ if (!params$all.nonzero.matrix) {
   saveRDS(expr.var.liver.bias,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.liver.bias", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.bias.comparisons,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.bias.comparisons", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(comparisons.mean.expr,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.mean.expr", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(comparisons.log2cv,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.log2cv", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(comparisons.resid.var,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.resid.var", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
 
   saveRDS(comparisons.expr.var,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.expr.var", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
 } else {
   saveRDS(expr.var.rank.common,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.rank.common.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
 
   saveRDS(expr.var.bias.by.condition,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.bias.by.condition.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.brain.bias,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.brain.bias.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.liver.bias,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.liver.bias.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(expr.var.bias.comparisons,
           file.path(params$output.rds.path, 
                     paste(params$species, "expr.var.bias.comparisons.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(comparisons.mean.expr,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.mean.expr.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(comparisons.log2cv,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.log2cv.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
   saveRDS(comparisons.resid.var,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.resid.var.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
 
   saveRDS(comparisons.expr.var,
           file.path(params$output.rds.path, 
                     paste(params$species, "comparisons.expr.var.nonzero", 
-                          paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                          paste(paste0("tau", params$tau.cutoff),
+                                paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
 }
 ```
 
