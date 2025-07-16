@@ -611,7 +611,7 @@ keep <- ls()[grepl("step[0-9]*|species.name",ls())]
 rm(list=setdiff(ls(), keep))
 gc()
 
-#### Step 13: Combine results from step 8 across species ####
+#### Step 13: Combine results from step 12 across species ####
 
 ##### Set input and parameters #####
 step13.organ.bias.combined <- list()
@@ -625,10 +625,14 @@ if (!dir.exists(step13.organ.bias.combined$output.dir)) {
 
 # List parameters
 step13.organ.bias.combined$params <- list(
-  list(all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE),
-  list(all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE),
-  list(all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=12345),
-  list(all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890)
+  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE),
+  list(tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE),
+  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=12345),
+  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890),
+  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE),
+  list(tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE),
+  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=12345),
+  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, seed.run=67890)
 )
 
 ##### Run analysis script #####
@@ -640,7 +644,8 @@ for (p in (1:length(step13.organ.bias.combined$params))) {
         params=step13.organ.bias.combined$params[[p]],
         output_file=file.path(
           "..", step13.organ.bias.combined$output.dir,
-          paste("LOC_ELU_DRE", ".html", sep="")))
+          paste("LOC_ELU_DRE",
+                paste0("tau", step13.organ.bias.combined$params[[p]]$tau.cutoff, ".html"), sep="_")))
       
     } else {
       rmarkdown::render(
@@ -649,6 +654,7 @@ for (p in (1:length(step13.organ.bias.combined$params))) {
         output_file=file.path(
           "..", step13.organ.bias.combined$output.dir,
           paste("LOC_ELU_DRE",
+                paste0("tau", step13.organ.bias.combined$params[[p]]$tau.cutoff),
                 paste0("rnd", step13.organ.bias.combined$params[[p]]$seed.run, ".html"), sep="_")))
       
     }
@@ -659,7 +665,8 @@ for (p in (1:length(step13.organ.bias.combined$params))) {
         params=step13.organ.bias.combined$params[[p]],
         output_file=file.path(
           "..", step13.organ.bias.combined$output.dir,
-          paste("LOC_ELU_DRE", "nonzero.html", sep="_")))
+          paste("LOC_ELU_DRE", "nonzero",
+                paste0("tau", step13.organ.bias.combined$params[[p]]$tau.cutoff, ".html"), sep="_")))
       
     } else {
       rmarkdown::render(
@@ -668,6 +675,7 @@ for (p in (1:length(step13.organ.bias.combined$params))) {
         output_file=file.path(
           "..", step13.organ.bias.combined$output.dir,
           paste("LOC_ELU_DRE", "nonzero", 
+                paste0("tau", step13.organ.bias.combined$params[[p]]$tau.cutoff),
                 paste0("rnd", step13.organ.bias.combined$params[[p]]$seed.run, ".html"), sep="_")))
       
     }

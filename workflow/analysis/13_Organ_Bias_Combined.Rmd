@@ -6,6 +6,7 @@ date: "`r Sys.Date()`"
 params:
   input.rds.path: "../../results/12_Organ_Bias"
   output.rds.path: "../../results/13_Organ_Bias_Combined"
+  tau.cutoff: 0.30
   all.nonzero.matrix: FALSE
   randomized.mean.expr: FALSE
   seed.run: 12345
@@ -44,50 +45,58 @@ if (!params$randomized.mean.expr) {
     comparisons.mean.expr.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.mean.expr.rds", sep="_")))
+                paste(sp, "comparisons.mean.expr",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                      
     })
-  
+    
     comparisons.log2cv.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.log2cv.rds", sep="_")))
+                paste(sp, "comparisons.log2cv",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                      
     })
   
     comparisons.resid.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.resid.var.rds", sep="_")))
+                paste(sp, "comparisons.resid.var",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                      
     })
    
     comparisons.expr.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.expr.var.rds", sep="_")))
+                paste(sp, "comparisons.expr.var",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                       
     })
     
   } else {
     comparisons.mean.expr.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.mean.expr.nonzero.rds", sep="_")))
+                paste(sp, "comparisons.mean.expr.nonzero",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                       
     })
   
     comparisons.log2cv.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.log2cv.nonzero.rds", sep="_")))
+                paste(sp, "comparisons.log2cv.nonzero",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                       
     })
   
     comparisons.resid.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.resid.var.nonzero.rds", sep="_")))
+                paste(sp, "comparisons.resid.var.nonzero",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                       
     })
   
     comparisons.expr.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.expr.var.nonzero.rds", sep="_")))
+                paste(sp, "comparisons.expr.var.nonzero",
+                      paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                       
     })  
   }  
 }
@@ -104,50 +113,66 @@ if (params$randomized.mean.expr) {
     comparisons.mean.expr.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.mean.expr", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.mean.expr",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
     })
   
     comparisons.log2cv.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.log2cv", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.log2cv",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))                      
     })
   
     comparisons.resid.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.resid.var", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.resid.var",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))                      
     })
    
     comparisons.expr.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.expr.var", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.expr.var",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))                      
     })
     
   } else {
     comparisons.mean.expr.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.mean.expr.nonzero", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.mean.expr.nonzero",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))                      
     })
   
     comparisons.log2cv.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.log2cv.nonzero", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.log2cv.nonzero",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))                      
     })
   
     comparisons.resid.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.resid.var.nonzero", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.resid.var.nonzero",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))                      
     })
   
     comparisons.expr.var.list <-
       lapply(setNames(species, species), function(sp) {
         readRDS(file.path(params$input.rds.path,
-                paste(sp, "comparisons.expr.var.nonzero", paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                paste(sp, "comparisons.expr.var.nonzero",
+                      paste(paste0("tau", params$tau.cutoff),
+                            paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))                      
     })  
   }
 } 
@@ -229,35 +254,39 @@ if (!params$randomized.mean.expr) {
   if (!params$all.nonzero.matrix) {
     saveRDS(wilcox.mean.expr.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.mean.expr.bind.rds", sep="_")))
-  
+                      paste("LOC_ELU_DRE", "wilcox.mean.expr.bind",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                            
     saveRDS(wilcox.log2cv.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.log2cv.bind.rds", sep="_")))
-  
+                      paste("LOC_ELU_DRE", "wilcox.log2cv.bind",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                            
     saveRDS(wilcox.resid.var.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.resid.var.bind.rds", sep="_")))
-  
+                      paste("LOC_ELU_DRE", "wilcox.resid.var.bind",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                            
     saveRDS(wilcox.expr.var.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.expr.var.bind.rds", sep="_")))
+                      paste("LOC_ELU_DRE", "wilcox.expr.var.bind",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))
+    
   } else {
     saveRDS(wilcox.mean.expr.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.mean.expr.bind.nonzero.rds", sep="_")))
+                      paste("LOC_ELU_DRE", "wilcox.mean.expr.bind.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                   
   
     saveRDS(wilcox.log2cv.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.log2cv.bind.nonzero.rds", sep="_")))
-  
+                      paste("LOC_ELU_DRE", "wilcox.log2cv.bind.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                            
     saveRDS(wilcox.resid.var.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.resid.var.bind.nonzero.rds", sep="_")))
-  
+                      paste("LOC_ELU_DRE", "wilcox.resid.var.bind.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                            
     saveRDS(wilcox.expr.var.bind,
             file.path(params$output.rds.path, 
-                      paste("LOC_ELU_DRE", "wilcox.expr.var.bind.nonzero.rds", sep="_")))  
+                      paste("LOC_ELU_DRE", "wilcox.expr.var.bind.nonzero",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))                            
   }  
 }
 ```
@@ -271,42 +300,51 @@ if (params$randomized.mean.expr) {
     saveRDS(wilcox.mean.expr.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.mean.expr.bind", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
     saveRDS(wilcox.log2cv.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.log2cv.bind", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
     saveRDS(wilcox.resid.var.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.resid.var.bind", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
 
     saveRDS(wilcox.expr.var.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.expr.var.bind", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_"))) 
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_"))) 
   } else {
     saveRDS(wilcox.mean.expr.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.mean.expr.bind.nonzero", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
     saveRDS(wilcox.log2cv.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.log2cv.bind.nonzero", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
   
     saveRDS(wilcox.resid.var.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.resid.var.bind.nonzero", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_")))
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))
 
     saveRDS(wilcox.expr.var.bind,
             file.path(params$output.rds.path, 
                       paste("LOC_ELU_DRE", "wilcox.expr.var.bind.nonzero", 
-                            paste0("rnd", params$seed.run, ".rds"), sep="_")))  
+                            paste(paste0("tau", params$tau.cutoff),
+                                  paste0("rnd", params$seed.run), "rds", sep="."), sep="_")))  
+    
   }  
 }
 ```
