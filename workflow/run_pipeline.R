@@ -687,7 +687,7 @@ keep <- ls()[grepl("step[0-9]*|species.name",ls())]
 rm(list=setdiff(ls(), keep))
 gc()
 
-#### Step 14: Combine results from step 8 for observed and randomized data ####
+#### Step 14: Combine results from step 12 for observed and randomized data ####
 
 ##### Set input and parameters #####
 step14.organ.bias.observed.vs.random <- list()
@@ -701,9 +701,12 @@ if (!dir.exists(step14.organ.bias.observed.vs.random$output.dir)) {
 
 # List parameters
 step14.organ.bias.observed.vs.random$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
-  list(species="ELU", species.name=species.name[["ELU"]], seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="DRE", species.name=species.name[["DRE"]], seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22)
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22)  
 )
 
 ##### Run analysis script #####
@@ -715,7 +718,10 @@ for (p in (1:length(step14.organ.bias.observed.vs.random$params))) {
     params=step14.organ.bias.observed.vs.random$params[[p]],
     output_file=file.path(
       "..", step14.organ.bias.observed.vs.random$output.dir,
-      paste(step14.organ.bias.observed.vs.random$params[[p]]$species, ".html", sep="")))
+      paste(step14.organ.bias.observed.vs.random$params[[p]]$species,
+            paste0("tau", step14.organ.bias.observed.vs.random$params[[p]]$tau.cutoff),
+            paste0("rnd", step14.organ.bias.observed.vs.random$params[[p]]$seed.run1),
+            paste0("rnd", step14.organ.bias.observed.vs.random$params[[p]]$seed.run2, ".html"), sep="_")))             
 }
 
 # Clear workspace
