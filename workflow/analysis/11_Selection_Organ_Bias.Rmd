@@ -28,6 +28,7 @@ library(ggpubr)
 
 ## Functions
 ```{r source-functions}
+source("../functions/selection.R")
 source("../functions/selection_plots.R")
 ```
 
@@ -36,9 +37,17 @@ source("../functions/selection_plots.R")
 ### Filtered selection data
 ```{r import-filtered-selection-data}
 # Load saved data from 08_Selection.Rmd
+
+## Filtered Selectome results
 selectome.sub <- readRDS(
   file.path(params$input.selection.rds.path,
             paste(params$species, "selectome.sub.rds", sep="_")))
+
+### With median variability across conditions
+#### Background gene set
+selectome.bgd.groupby.gene.ev.median <- readRDS(
+  file.path(params$input.selection.rds.path,
+            paste(params$species, "selectome.bgd.groupby.gene.ev.median.rds", sep="_")))
 ```
 
 ### Expression specificity (tau)
@@ -69,18 +78,30 @@ selection.tau.tissue.biased <- selection.tau.tissue %>%
 
 # Group by GeneID
 ## The estimated omega0 is the same across all branches of each gene tree
+## Add median variability rank across conditions
 selection.tau.tissue.groupby.gene <- selection.tau.tissue %>%
   dplyr::group_by(GeneID, PrimaryTissue, tau, TissueBias) %>%
   dplyr::summarise(
     omega0 = mean(omega0)
   ) %>%
-  dplyr::ungroup()
+  dplyr::ungroup() %>%
+  dplyr::inner_join(selectome.bgd.groupby.gene.ev.median, by=c("GeneID","omega0"))
+
+# Broadly expressed genes
+selection.tau.tissue.groupby.gene.broad <- selection.tau.tissue.groupby.gene %>%
+  dplyr::filter(TissueBias=="broad") %>%
+  check_missing_bins(all.bins=seq(0.1,1,0.1)) # Add any missing bins for visualization
+
+# Organ-biased genes
+selection.tau.tissue.groupby.gene.biased <- selection.tau.tissue.groupby.gene %>%
+  dplyr::filter(TissueBias!="broad") %>%
+  check_missing_bins(all.bins=seq(0.1,1,0.1))
 ```
 
 ## Strength of purifying selection
 
-### Boxplot
-```{r boxplot-selection-organ-bias, fig.width=10, fig.height=8}
+### Boxplot - omega0 grouped by organ bias
+```{r boxplot-omega0-organ-bias, fig.width=10, fig.height=8}
 comparisons <- list(c("brain","broad"))
 
 ggplot(selection.tau.tissue, 
@@ -124,6 +145,19 @@ ggplot(selection.tau.tissue.groupby.gene,
   theme(plot.title=element_text(size=20, face="italic"),
         axis.title=element_text(size=18),
         axis.text=element_text(size=14))
+```
+
+
+### Boxplots - omega0 grouped by variability rank
+
+#### Broadly expressed genes
+```{r boxplot-omega0-varbins-broad, fig.width=10, fig.height=8}
+boxplot_omega0_varbins(selection.tau.tissue.groupby.gene.broad, compare.extremes=TRUE, title=params$species.name)
+```
+
+#### Organ-biased genes
+```{r boxplot-omega0-varbins-biased, fig.width=10, fig.height=8}
+boxplot_omega0_varbins(selection.tau.tissue.groupby.gene.biased, compare.extremes=TRUE, title=params$species.name)
 ```
 
 
