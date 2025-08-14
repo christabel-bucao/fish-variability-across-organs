@@ -25,6 +25,7 @@ print(params)
 ## Libraries
 ```{r import-libraries}
 library(dplyr)
+library(matrixStats)
 ```
 
 ## Functions
@@ -72,13 +73,15 @@ colnames(selectome) <- c("GeneID", "TaxID", "Taxon", "qvalue", "LRT", "omega0", 
 
 ## Gene expression variability across conditions
 
-### Merge variability rank
+### Variability bins
+
+#### Merge variability rank
 ```{r merge-ev-rank}
 ev.rank <- 
   merge_ev_rank(jack.summary, filtered.samples$metadata, by="local", join="full", method="cv")
 ```
 
-### Classify genes as low, high, or mid variability (LV, HV, MV) based on percentile cutoff
+#### Classify genes as low, high, or mid variability (LV, HV, MV) based on percentile cutoff
 ```{r classify-ev}
 if ("Sex" %in% colnames(filtered.samples$metadata)) { 
   ev.tally <- vector(mode="list",3)
@@ -132,6 +135,22 @@ if ("Sex" %in% colnames(filtered.samples$metadata)) {
 }
 ```
 
+### Median variability across conditions
+
+#### Compute median variability across conditions
+```{r compute-median-ev}
+# Without gene filtering
+ev.rank.median <-
+  matrixStats::rowMedians(as.matrix(ev.rank), useNames=TRUE, na.rm=TRUE)
+
+# With gene filtering
+## Consider only genes with variability data in at least n.conditions
+ev.rank.filtered <- ev.rank[rowSums(!is.na(ev.rank))>=n.conditions,]
+ev.rank.filtered.median <- 
+  matrixStats::rowMedians(as.matrix(ev.rank.filtered), useNames=TRUE, na.rm=TRUE)
+```
+
+
 ## Selection analysis
 
 ### Filter Selectome results
@@ -145,8 +164,74 @@ selectome.uniq <-
   dplyr::distinct(selectome, GeneID, TaxID, Taxon, .keep_all=TRUE)
 ```
 
-#### Subset Selectome results by gene lists
+#### Background gene set
+```{r subset-selectome-results-bgd}
+# Larger gene list without pan-LV, MV HV classifications
+# The background gene set includes genes which have variability data in at least n.conditions
+selectome.bgd <- selectome.uniq %>%
+  dplyr::filter(GeneID %in% rownames(ev.tally.sort[["Bgd"]]))
+
+# Group by GeneID
+## The estimated omega0 is the same across all branches of each gene tree
+selectome.bgd.groupby.gene <- selectome.bgd %>%
+  dplyr::group_by(GeneID) %>%
+  dplyr::summarise(
+    omega0 = mean(omega0)
+  ) %>%
+dplyr::ungroup()
+
+# Number of unique gene IDs
+dplyr::n_distinct(selectome.bgd.groupby.gene$GeneID)
+```
+
+##### Group median variability rank into bins
+```{r group-selectome-bgd-varbins}
+# Add median variability across conditions
+selectome.bgd.groupby.gene.ev.median <- selectome.bgd.groupby.gene %>%
+  dplyr::inner_join(data.frame("GeneID"=names(ev.rank.median),"MedianVar"=ev.rank.median),by="GeneID")
+
+# Option 1: Group median variability rank into bins by rounding to the first decimal place
+#selectome.bgd.groupby.gene.ev.median$VarRankBin <-
+#  round(selectome.bgd.groupby.gene.ev.median$MedianVar, 1)
+
+# Option 2: Group median variability rank into 10 bins of size 0.1
+selectome.bgd.groupby.gene.ev.median$VarRankBin <-
+  ceiling(selectome.bgd.groupby.gene.ev.median$MedianVar*10)/10
+
+# Define lowly and highly variable genes based on ev.percentile cutoff
+# e.g., for ev.percentile=0.20
+# Given 10 equally sized bins (0-0.1, 0.1-0.2, ..., 0.8-0.9, 0.9-1.0)
+# bins 0.1 and 0.2 are considered lowly variable
+# bins 0.9 and 1.0 are considered highly variable
+selectome.bgd.groupby.gene.ev.median$VarRankCategory <-
+  apply(selectome.bgd.groupby.gene.ev.median, MARGIN=1, function(r) {
+    if (r[["VarRankBin"]] <= params$ev.percentile) { "low" }
+    else if (r[["VarRankBin"]] >= (1.0-params$ev.percentile+0.1)) { "high" }
+    else { "mid" }
+  })
+
+# Add any missing bins for visualization purposes
+selectome.bgd.groupby.gene.ev.median <- selectome.bgd.groupby.gene.ev.median %>%
+  check_missing_bins(all.bins=seq(0.1,1,0.1))
+```
+
+##### Revision: Boxplot - Purifying selection with variability rank bins
+```{r boxplot-omega0-varbins, fig.width=10, fig.height=8}
+boxplot_omega0_varbins(selectome.bgd.groupby.gene.ev.median, title=params$species.name)
+boxplot_omega0_varbins(selectome.bgd.groupby.gene.ev.median, compare.extremes=TRUE, title=params$species.name)
+```
+
+##### Revision: Scatterplot
+```{r scatterplot-omega0-bgd, fig.width=6, fig.height=6}
+scatterplot_omega0_variability(selectome.bgd.groupby.gene.ev.median, title=params$species.name)
+```
+
+#### Version 1.0: Classified by low, mid, high variability
 ```{r subset-selectome-results}
+# Criteria:
+# (1) Consider only genes with variability data in at least n.conditions
+# (2) Classify genes as pan-LV (or HV, MV) if it is LV (HV, MV) in more than half of conditions
+
 selectome.sub <- lapply(ev.cat, function(ev) {
   dplyr::filter(selectome.uniq, GeneID %in% rownames(ev.tally.sort[[ev]]))
 })
@@ -166,12 +251,16 @@ selectome.sub.bind.groupby.gene <- selectome.sub.bind %>%
   ) %>%
   dplyr::ungroup()
 
+# Number of unique gene IDs
+dplyr::n_distinct(selectome.sub.bind.groupby.gene$GeneID)
+
 # Branches
 print(levels(as.factor(selectome.sub$Bgd$Taxon)))
 ```
 
-### Purifying selection
+###### Version 1.0: Boxplot - Purifying selection with variability categories
 ```{r boxplot-omega0, fig.width=8, fig.height=10}
+# With pan-LV, MV, HV classifications
 boxplot_omega0(selectome.sub.bind.groupby.gene, title=params$species.name)
 boxplot_omega0(selectome.sub.bind.groupby.gene, compare.means=TRUE, title=params$species.name)
 ```
@@ -180,6 +269,8 @@ boxplot_omega0(selectome.sub.bind.groupby.gene, compare.means=TRUE, title=params
 
 #### Observed proportion of branches under positive selection (q-value < 0.05)
 ```{r positive-selection-enrichment}
+# Based on version 1.0: Variability categories (low, mid, high variability)
+
 selectome.enrichment <- data.frame(
   "Category"=ev.cat,
   "Selection_Yes"=rep(NA,length(ev.cat)),
@@ -364,6 +455,17 @@ saveRDS(selectome.sub,
         file.path(params$output.rds.path, 
                   paste(params$species, "selectome.sub.rds", sep="_")))
 
+## Background gene set
+saveRDS(selectome.bgd,
+        file.path(params$output.rds.path,
+                  paste(params$species, "selectome.bgd.rds", sep="_")))
+
+### Background gene set with median variability across conditions
+saveRDS(selectome.bgd.groupby.gene.ev.median,
+        file.path(params$output.rds.path,
+                  paste(params$species, "selectome.bgd.groupby.gene.ev.median.rds", sep="_")))
+
+## Subset by variability rank categories
 saveRDS(selectome.sub.bind,
         file.path(params$output.rds.path, 
                   paste(params$species, "selectome.sub.bind.rds", sep="_")))

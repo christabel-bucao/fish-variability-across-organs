@@ -117,6 +117,24 @@ tally_ev <- function(ev.matrix, ev.percentile=0.20, output="all") {
   else if (output=="summary") { return(ev.tally$summary) }
 }
 
+# Check for missing bins
+check_missing_bins <- function(selectome.df, all.bins="") {
+  complete.bins <- all.bins
+  present.bins <- levels(factor(selectome.df$VarRankBin))
+  missing.bins <- complete.bins[!(complete.bins %in% present.bins)]
+  
+  # Add missing bin (for visualization purposes)
+  if (length(missing.bins) > 0) {
+    # Add missing bin (for visualization purposes)
+    selectome.df <- selectome.df %>%
+      dplyr::bind_rows(data.frame("GeneID"=rep(NA, length(missing.bins)),
+                                  "omega0"=rep(NA, length(missing.bins)),
+                                  "MedianVar"=rep(NA, length(missing.bins)),
+                                  "VarRankBin"=missing.bins)) 
+  }  
+  return(selectome.df)
+}
+
 # Permute values in each column
 permute_by_cols <- function(input.matrix, seed=12345) {
   set.seed(seed)
