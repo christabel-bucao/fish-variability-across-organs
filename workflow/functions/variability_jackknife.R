@@ -18,9 +18,9 @@ compute_gene_summary_stats <- function(expr.matrix) {
   expr.matrix[is.infinite(expr.matrix)] <- NA
   
   means <- rowMeans(expr.matrix, na.rm=TRUE)
-  medians <- rowMedians(expr.matrix, useNames=TRUE, na.rm=TRUE)
-  vars <- rowVars(expr.matrix, useNames=TRUE, na.rm=TRUE)
-  sds <- rowSds(expr.matrix, useNames=TRUE, na.rm=TRUE)
+  medians <- matrixStats::rowMedians(expr.matrix, useNames=TRUE, na.rm=TRUE)
+  vars <- matrixStats::rowVars(expr.matrix, useNames=TRUE, na.rm=TRUE)
+  sds <- matrixStats::rowSds(expr.matrix, useNames=TRUE, na.rm=TRUE)
   cv.sq <- (sds/means)^2
   
   stats.df <- 
@@ -39,7 +39,7 @@ compute_gene_summary_stats <- function(expr.matrix) {
 # Output: model.results = list with input (mean, SD) and output values (adj SD, log2 adj SD)
 adjusted_sd <- function(expr.matrix) {
   means <- rowMeans(expr.matrix)
-  sds <- rowSds(expr.matrix, useNames=TRUE)
+  sds <- matrixStats::rowSds(expr.matrix, useNames=TRUE)
   
   model.df <- data.frame("Mean"=means, "SD"=sds)
   
@@ -58,7 +58,7 @@ adjusted_sd <- function(expr.matrix) {
 # Metric adapted from Faure et al. (2017) (doi: 10.1016/j.cels.2017.10.003)
 residual_log2cv <- function(expr.matrix) {
   means <- rowMeans(expr.matrix)
-  sds <- rowSds(expr.matrix, useNames=TRUE)
+  sds <- matrixStats::rowSds(expr.matrix, useNames=TRUE)
   cv.sq <- (sds/means)^2
   log2.cv.sq <- log2(cv.sq)
   
@@ -74,7 +74,7 @@ residual_log2cv <- function(expr.matrix) {
 # Defined as the residual of log2 SD
 residual_log2sd <- function(expr.matrix) {
   means <- rowMeans(expr.matrix)
-  log2.sd <-log2(rowSds(expr.matrix, useNames=TRUE))
+  log2.sd <-log2(matrixStats::rowSds(expr.matrix, useNames=TRUE))
   
   model.df <- data.frame("Mean"=means, "Log2SD"=log2.sd)
   model.fit <- loess(Log2SD~Mean, model.df, span=0.6)
@@ -171,11 +171,11 @@ jackknife_adj_sd <- function(expr.matrix, min.percentile=0.00, max.percentile=0.
   # Summarize jackknife results
   jack$summary <- 
     data.frame("Mean_Mean"=rowMeans(jack$mean), # Jackknifed mean
-               "Median_Mean"=rowMedians(jack$mean, useNames=TRUE),
+               "Median_Mean"=matrixStats::rowMedians(jack$mean, useNames=TRUE),
                "Mean_SD"=rowMeans(jack$sd),
-               "Median_SD"=rowMedians(jack$sd, useNames=TRUE),
+               "Median_SD"=matrixStats::rowMedians(jack$sd, useNames=TRUE),
                "Mean_AdjSD"=rowMeans(jack$adj.sd),
-               "Median_AdjSD"=rowMedians(jack$adj.sd, useNames=TRUE),
+               "Median_AdjSD"=matrixStats::rowMedians(jack$adj.sd, useNames=TRUE),
                row.names=rownames(filtered.matrix))
   
   # Remove top and bottom x% of genes by expression
@@ -185,7 +185,7 @@ jackknife_adj_sd <- function(expr.matrix, min.percentile=0.00, max.percentile=0.
   
   # Local and global variability rank
   mean.rank.adj.sd <- rowMeans(jack$rank.adj.sd, na.rm=TRUE)
-  median.rank.adj.sd <- rowMedians(jack$rank.adj.sd, na.rm=TRUE, useNames=TRUE)
+  median.rank.adj.sd <- matrixStats::rowMedians(jack$rank.adj.sd, na.rm=TRUE, useNames=TRUE)
   
   jack$summary$Mean_Local_Rank_AdjSD <- mean.rank.adj.sd[rownames(jack$summary)]
   jack$summary$Median_Local_Rank_AdjSD <- median.rank.adj.sd[rownames(jack$summary)]
@@ -234,11 +234,11 @@ jackknife_resid_log2cv <- function(expr.matrix, min.percentile=0.00, max.percent
   # Summarize jackknife results
   jack$summary <- 
     data.frame("Mean_Mean"=rowMeans(jack$mean), # Jackknifed mean
-               "Median_Mean"=rowMedians(jack$mean, useNames=TRUE),
+               "Median_Mean"=matrixStats::rowMedians(jack$mean, useNames=TRUE),
                "Mean_Log2CV"=rowMeans(jack$log2.cv),
-               "Median_Log2CV"=rowMedians(jack$log2.cv, useNames=TRUE),
+               "Median_Log2CV"=matrixStats::rowMedians(jack$log2.cv, useNames=TRUE),
                "Mean_Resid_Log2CV"=rowMeans(jack$resid.log2.cv),
-               "Median_Resid_Log2CV"=rowMedians(jack$resid.log2.cv, useNames=TRUE),
+               "Median_Resid_Log2CV"=matrixStats::rowMedians(jack$resid.log2.cv, useNames=TRUE),
                row.names=rownames(filtered.matrix))
   
   # Remove top and bottom x% of genes by expression
@@ -249,7 +249,7 @@ jackknife_resid_log2cv <- function(expr.matrix, min.percentile=0.00, max.percent
   # Local and global variability rank
   mean.local.rank.log2.cv <- rowMeans(jack$rank.resid.log2.cv, na.rm=TRUE)
   median.local.rank.log2.cv <- 
-    rowMedians(jack$rank.resid.log2.cv, na.rm=TRUE, useNames=TRUE)
+    matrixStats::rowMedians(jack$rank.resid.log2.cv, na.rm=TRUE, useNames=TRUE)
   
   jack$summary$Mean_Local_Rank_Log2CV <- mean.local.rank.log2.cv[rownames(jack$summary)]
   jack$summary$Median_Local_Rank_Log2CV <- median.local.rank.log2.cv[rownames(jack$summary)]
@@ -298,11 +298,11 @@ jackknife_resid_log2sd <- function(expr.matrix, min.percentile=0.00, max.percent
   # Summarize jackknife results
   jack$summary <- 
     data.frame("Mean_Mean"=rowMeans(jack$mean), # Jackknifed mean
-               "Median_Mean"=rowMedians(jack$mean, useNames=TRUE),
+               "Median_Mean"=matrixStats::rowMedians(jack$mean, useNames=TRUE),
                "Mean_Log2SD"=rowMeans(jack$log2.sd),
-               "Median_Log2SD"=rowMedians(jack$log2.sd, useNames=TRUE),
+               "Median_Log2SD"=matrixStats::rowMedians(jack$log2.sd, useNames=TRUE),
                "Mean_Resid_Log2SD"=rowMeans(jack$resid.log2.sd),
-               "Median_Resid_Log2SD"=rowMedians(jack$resid.log2.sd, useNames=TRUE),
+               "Median_Resid_Log2SD"=matrixStats::rowMedians(jack$resid.log2.sd, useNames=TRUE),
                row.names=rownames(filtered.matrix))
   
   # Remove top and bottom x% of genes by expression
@@ -313,7 +313,7 @@ jackknife_resid_log2sd <- function(expr.matrix, min.percentile=0.00, max.percent
   # Local and global variability rank
   mean.local.rank.log2.sd <- rowMeans(jack$rank.resid.log2.sd, na.rm=TRUE)
   median.local.rank.log2.sd <- 
-    rowMedians(jack$rank.resid.log2.sd, na.rm=TRUE, useNames=TRUE)
+    matrixStats::rowMedians(jack$rank.resid.log2.sd, na.rm=TRUE, useNames=TRUE)
   
   jack$summary$Mean_Local_Rank_Log2SD <- mean.local.rank.log2.sd[rownames(jack$summary)]
   jack$summary$Median_Local_Rank_Log2SD <- median.local.rank.log2.sd[rownames(jack$summary)]
