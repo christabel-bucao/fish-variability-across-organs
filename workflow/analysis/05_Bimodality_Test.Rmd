@@ -127,7 +127,7 @@ for (c in 1:length(conditions)) {
 ### Compute z-score per condition
 ```{r compute-zscore}
 zscore.matrix <- lapply(setNames(conditions, conditions), function(ts) {
-  zscore(filtered.samples.retained$log2.tmm.cpm.gf[[ts]])
+  compute_zscore(filtered.samples.retained$log2.tmm.cpm.gf[[ts]])
 })
 ```
 
@@ -149,7 +149,8 @@ for (ts in conditions) {
     })
   
   # Group variability ranks into bins of size 0.1
-  bimodality.test[[ts]]$VarRankBin <- round(bimodality.test[[ts]]$VarRank, 1)
+  #bimodality.test[[ts]]$VarRankBin <- round(bimodality.test[[ts]]$VarRank, 1)
+  bimodality.test[[ts]]$VarRankBin <- ceiling(bimodality.test[[ts]]$VarRank*10)/10
 }
 ```
 
