@@ -5,7 +5,16 @@ library(ggplot2)
 library(ggpubr)
 
 #### Sourced functions ####
-source("../functions/annotate_boxplots.R")
+#source("../functions/annotate_boxplots.R")
+
+# Annotate boxplot with number of observations per grouping
+annotate_n <- function(x) {
+  return(c(y = -0.01, label = length(x))) 
+}
+# Annotate boxplot with median per grouping
+annotate_median <- function(x) {
+  return(c(y = median(x)*1.10, label = round(median(x),2))) 
+}
 
 #### Functions ####
 boxplot_bimodality_by_variability <- function(bimodality.test.bind, title="", subtitle="", facet=TRUE) {
@@ -37,6 +46,8 @@ boxplot_bimodality_by_variability <- function(bimodality.test.bind, title="", su
       geom_boxplot(notch=TRUE) +
       stat_summary(fun.data=annotate_median, geom="text", fun=median, 
                    position=position_dodge(width=0.75), size=6) +
+      stat_summary(fun.data= annotate_n, geom="text", fun=median, 
+                   position= position_dodge(width = 0.75), size=7) +
       labs(title=title,
            subtitle=subtitle,
            x="Variability rank bin",
@@ -59,6 +70,8 @@ boxplot_bimodality_by_variability_v2 <- function(bimodality.test.bind, title="",
     geom_boxplot(notch=TRUE, fill="#00BFC4") +
     stat_summary(fun.data = annotate_median, geom = "text", fun = median, 
                  position = position_dodge(width = 0.75), size=7) +
+    stat_summary(fun.data= annotate_n, geom="text", fun=median, 
+                 position= position_dodge(width = 0.75), size=7) +
     labs(title=title,
          subtitle=subtitle,
          x="Variability rank bin",

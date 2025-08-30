@@ -99,7 +99,7 @@ expr.matrix.tissue1 <- samples.norm.within$log2.tmm.cpm.gf[[params$tissue1]][[pa
 
 ### Compute z-score
 ```{r compute-zscore-tissue1}
-zscore.matrix.tissue1 <- zscore(expr.matrix.tissue1)
+zscore.matrix.tissue1 <- compute_zscore(expr.matrix.tissue1)
 ```
 
 ### Bimodality test
@@ -123,7 +123,8 @@ bimodality.test.tissue1$VarRank <-
   })
 
 # Group variability ranks into bins of size 0.1
-bimodality.test.tissue1$VarRankBin <- round(bimodality.test.tissue1$VarRank,1)
+#bimodality.test.tissue1$VarRankBin <- round(bimodality.test.tissue1$VarRank,1)
+bimodality.test.tissue1$VarRankBin <- ceiling(bimodality.test.tissue1$VarRank*10)/10
 ```
 
 ```{r}
@@ -145,7 +146,8 @@ boxplot_bimodality_by_variability(
 #### Bin BI values
 ```{r bin-bi-values-tissue1}
 # Group BI values into bins of size 0.1
-bimodality.test.tissue1$BIBin <- round(bimodality.test.tissue1$BI,1)
+#bimodality.test.tissue1$BIBin <- round(bimodality.test.tissue1$BI,1)
+bimodality.test.tissue1$BIBin<- ceiling(bimodality.test.tissue1$BI*10)/10
 
 dplyr::count(bimodality.test.tissue1, BIBin)
 ```
@@ -228,7 +230,7 @@ expr.matrix.tissue1.2 <-
 
 ### Compute z-score
 ```{r compute-zscore-tissue1-2}
-zscore.matrix.tissue1.2 <- zscore(expr.matrix.tissue1.2)
+zscore.matrix.tissue1.2 <- compute_zscore(expr.matrix.tissue1.2)
 ```
 
 ### Bimodality test
@@ -252,7 +254,8 @@ bimodality.test.tissue1.2$VarRank <-
   })
 
 # Group variability ranks into bins of size 0.1
-bimodality.test.tissue1.2$VarRankBin <- round(bimodality.test.tissue1.2$VarRank,1)
+#bimodality.test.tissue1.2$VarRankBin <- round(bimodality.test.tissue1.2$VarRank,1)
+bimodality.test.tissue1.2$VarRankBin <- ceiling(bimodality.test.tissue1.2$VarRank*10)/10
 ```
 
 ```{r}
@@ -281,7 +284,8 @@ boxplot_bimodality_by_variability_v2(
 #### Bin BI values
 ```{r bin-bi-values-tissue1-2}
 # Group BI values into bins of size 0.1
-bimodality.test.tissue1.2$BIBin <- round(bimodality.test.tissue1.2$BI,1)
+#bimodality.test.tissue1.2$BIBin <- round(bimodality.test.tissue1.2$BI,1)
+bimodality.test.tissue1.2$BIBin <- ceiling(bimodality.test.tissue1.2$BI*10)/10
 
 dplyr::count(bimodality.test.tissue1.2, BIBin)
 ```
