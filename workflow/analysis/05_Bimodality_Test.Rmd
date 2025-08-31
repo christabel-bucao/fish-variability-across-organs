@@ -151,6 +151,7 @@ for (ts in conditions) {
   # Group variability ranks into bins of size 0.1
   #bimodality.test[[ts]]$VarRankBin <- round(bimodality.test[[ts]]$VarRank, 1)
   bimodality.test[[ts]]$VarRankBin <- ceiling(bimodality.test[[ts]]$VarRank*10)/10
+  bimodality.test[[ts]]$VarRankBin[round(bimodality.test[[ts]]$VarRankBin,1)==0.0] <- 0.1
 }
 ```
 
@@ -181,6 +182,7 @@ boxplot_bimodality_by_variability(bimodality.test.bind, title=params$species.nam
 ```{r fig.width=8, fig.height=5}
 # Will only print last plot to HTML, but works on RStudio
 for (ts in conditions) {
+  print(ts)
   plot_density_zscore(zscore.matrix[[ts]], bimodality.test[[ts]], title=ts)
 }
 ```
