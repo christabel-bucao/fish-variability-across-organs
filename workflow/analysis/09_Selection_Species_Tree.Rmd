@@ -63,21 +63,21 @@ collapsed.ggtree <- collapse(full.ggtree, node=187) %>%
 
 collapsed.ggtree +
   geom_tiplab(aes(label=label, subset=c(label %in% c("Lepisosteus oculatus","Esox lucius","Danio rerio")), color=group),
-              fontface='italic', size=3.5, color="#000000") +
+              fontface='italic', size=5, color="#000000") +
   scale_color_manual(values=c("#A9A9A9","#00BFC4")) +
   geom_nodelab(aes(label=label, 
                    subset=c(label %in% c("Euteleostomi","Actinopterygii","Neopterygii",
                                          "Osteoglossocephalai","Clupeocephala",
                                          "Euteleosteomorpha","Protacanthopterygii",
                                          "Otomorpha","Otophysi"))), 
-               size=3.5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#00BFC4") +
+               size=5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#00BFC4") +
   geom_nodelab(aes(label=label, 
                    subset=c(!(label %in% c("Euteleostomi","Actinopterygii","Neopterygii",
                                          "Osteoglossocephalai","Clupeocephala",
                                          "Euteleosteomorpha","Protacanthopterygii",
                                          "Otomorpha","Otophysi")))), 
-               size=3.5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#A9A9A9") +
-  xlim(c(-0.5,7.5)) +
+               size=5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#A9A9A9") +
+  xlim(c(-1,7.5)) +
   coord_cartesian() +
   theme_tree2() +
   theme(legend.position="none", plot.margin = unit(c(25,15,25,15), "mm"),
