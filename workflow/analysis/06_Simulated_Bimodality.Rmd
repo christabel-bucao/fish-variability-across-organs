@@ -125,6 +125,7 @@ bimodality.test.tissue1$VarRank <-
 # Group variability ranks into bins of size 0.1
 #bimodality.test.tissue1$VarRankBin <- round(bimodality.test.tissue1$VarRank,1)
 bimodality.test.tissue1$VarRankBin <- ceiling(bimodality.test.tissue1$VarRank*10)/10
+bimodality.test.tissue1$VarRankBin[round(bimodality.test.tissue1$VarRankBin,1)==0.0] <- 0.1
 ```
 
 ```{r}
@@ -256,6 +257,7 @@ bimodality.test.tissue1.2$VarRank <-
 # Group variability ranks into bins of size 0.1
 #bimodality.test.tissue1.2$VarRankBin <- round(bimodality.test.tissue1.2$VarRank,1)
 bimodality.test.tissue1.2$VarRankBin <- ceiling(bimodality.test.tissue1.2$VarRank*10)/10
+bimodality.test.tissue1.2$VarRankBin[round(bimodality.test.tissue1.2$VarRankBin,1)==0.0] <- 0.1
 ```
 
 ```{r}

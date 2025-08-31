@@ -112,7 +112,7 @@ boxplot_bimodality_by_variability_comparison <- function(bimodality.test.bind, t
 plot_density_zscore <- function(zscore.matrix, bimodality.test, title="") {
   par(mfrow=c(3,4), mai = c(0.8,0.6,0.2,0.2))
   
-  b <- 0
+  b <- 0.1
   while (b < 1.0) {
     i <- 0.1
     
