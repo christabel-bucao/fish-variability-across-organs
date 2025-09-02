@@ -4,6 +4,7 @@
 #### Libraries ####
 library(edgeR)
 library(matrixStats)
+library(sva)
 
 #### Sourced functions ####
 source("../functions/unit_tests.R")
@@ -49,8 +50,8 @@ filter_genes_by_cpm <- function(counts.matrix, metadata, min.cpm, tmm=FALSE) {
     cpm <- edgeR::cpm(counts.matrix)
   }
   
-  filtered.counts <- 
-    counts.matrix[rowMeans(cpm)>min.cpm & matrixStats::rowMedians(cpm)>min.cpm,]
+  filtered.counts <- as.matrix(counts.matrix)
+  filtered.counts <- filtered.counts[rowMeans(cpm)>min.cpm & matrixStats::rowMedians(cpm)>min.cpm,]
   return(filtered.counts)
 }
 

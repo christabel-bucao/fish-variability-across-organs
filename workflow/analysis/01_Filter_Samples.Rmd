@@ -28,7 +28,18 @@ print(params)
 
 ## Libraries
 ```{r import-libraries}
-library(dplyr)
+# Install sva
+packages <- c("dplyr","sva")
+
+for (p in packages) {
+  if (!require(p, character.only=TRUE)) {
+    print(paste("Installing", p))
+    install.packages(p, character.only=TRUE)
+    renv::snapshot()
+  }
+  print(paste("Loading", p))
+  library(p, character.only=TRUE)
+}
 ```
 
 ## Functions
@@ -115,7 +126,9 @@ plot_detected_genes_vs_mapped_reads(
   data.init$metadata, params$min.genes, params$min.reads, params$set.scale)
 ```
 
-Initial gene filtering and normalization
+### Initial gene filtering and normalization
+
+#### No batch correction
 ```{r initial-gene-filtering-and-normalization}
 data.init$counts.gf <-
   filter_genes_by_cpm_per_condition(data.init$counts, data.init$metadata, min.cpm=params$min.cpm)
@@ -129,39 +142,87 @@ data.init$log2.tmm.cpm.gf <-
                               log2=TRUE, shift.min=TRUE)
 ```
 
+#### With batch correction
+```{r}
+data.init.combat <- vector(mode="list", length=6)
+names(data.init.combat) <- c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
+
+data.init.combat$conditions <- data.init$conditions
+data.init.combat$metadata <- data.init$metadata
+
+# Batch correction on raw count matrix
+#data.init.combat$counts <- ComBat_seq(counts=data.init$counts, batch=data.init$metadata$Batch, group=NULL)
+if ("Sex" %in% colnames(data.init$metadata)) {
+  data.init.combat$counts <- 
+    ComBat_seq(counts=data.init$counts,
+               batch=data.init$metadata$Batch,
+               group=paste(data.init$metadata$Tissue, data.init$metadata$Sex, sep="_"))  
+} else {
+  data.init.combat$counts <- 
+    ComBat_seq(counts=data.init$counts,
+               batch=data.init$metadata$Batch,
+               group=data.init$metadata$Tissue)  
+}
+
+data.init.combat$counts.gf <-
+  filter_genes_by_cpm_per_condition(data.init.combat$counts, data.init.combat$metadata, min.cpm=params$min.cpm)
+
+# Normalize across all conditions
+data.init.combat$tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.init.combat$counts.gf, data.init.combat$metadata, log2=FALSE)
+
+data.init.combat$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.init.combat$counts.gf, data.init.combat$metadata, 
+                              log2=TRUE, shift.min=TRUE)
+```
+
+
 ### Plot - PCA {.tabset}
 
 Check sample clustering before removing low quality samples
 ```{r plot-initial-pca, fig.align='center'}
 data.init$pca <- run_pca(data.init$log2.tmm.cpm.gf)
+data.init.combat$pca <- run_pca(data.init.combat$log2.tmm.cpm.gf)
 ```
 
 #### By mapped reads
 ```{r plot-initial-pca-mapped-reads, fig.align='center'}
 plot_pca_by_mapped_reads(data.init$pca, data.init$metadata, params$min.reads)
+plot_pca_by_mapped_reads(data.init.combat$pca, data.init.combat$metadata, params$min.reads)
+
 plot_pca_by_mapped_reads_gradient(data.init$pca, data.init$metadata)
+plot_pca_by_mapped_reads_gradient(data.init.combat$pca, data.init.combat$metadata)
 ```
 
 #### By detected genes
 ```{r plot-initial-pca-detected-genes, fig.align='center'}
 plot_pca_by_detected_genes(data.init$pca, data.init$metadata, params$min.genes)
+plot_pca_by_detected_genes(data.init.combat$pca, data.init.combat$metadata, params$min.genes)
+
 plot_pca_by_detected_genes_gradient(data.init$pca, data.init$metadata)
+plot_pca_by_detected_genes_gradient(data.init.combat$pca, data.init.combat$metadata)
 ```
 
 #### By batch
 ```{r plot-initial-pca-batch, fig.align='center'}
 plot_pca_by_batch(data.init$pca, data.init$metadata)
+plot_pca_by_batch(data.init.combat$pca, data.init.combat$metadata)
 ```
 
 #### By condition
 ```{r plot-initial-pca-condition, fig.align='center'}
 plot_pca_by_condition(data.init$pca, data.init$metadata)
+plot_pca_by_condition(data.init.combat$pca, data.init.combat$metadata)
+
 plot_pca_by_condition_pc34(data.init$pca, data.init$metadata)
+plot_pca_by_condition_pc34(data.init.combat$pca, data.init.combat$metadata)
 ```
 
 ## Filter 1: Sequencing quality
 
-Remove samples with less than minimum detected genes OR less than minimum mapped reads
+### Remove samples with less than minimum detected genes OR less than minimum mapped reads
+
+#### No batch correction
 ```{r filter-samples-by-detected-genes-mapped-reads, fig.align='center', fig.height=5}
 data.qc1.seq <- 
   filter_samples_by_detected_genes_mapped_reads(
@@ -171,6 +232,7 @@ data.qc1.seq <-
 data.qc1.seq <-
   filter_conditions_by_min_replicates(
     data.qc1.seq$counts, data.qc1.seq$metadata, params$min.replicates)
+
 data.qc1.seq$counts.gf <-
   filter_genes_by_cpm_per_condition(data.qc1.seq$counts, data.qc1.seq$metadata, min.cpm=params$min.cpm)
 
@@ -185,44 +247,92 @@ data.qc1.seq$log2.tmm.cpm.gf <-
 plot_detected_genes_vs_mapped_reads(data.qc1.seq$metadata, params$min.genes, params$min.reads)
 ```
 
+#### With batch correction
+```{r filter-samples-by-detected-genes-mapped-reads-combat, fig.align='center', fig.height=5}
+data.qc1.seq.combat <- list()
+data.qc1.seq.combat$conditions <- data.qc1.seq$conditions
+data.qc1.seq.combat$metadata <- data.qc1.seq$metadata
+
+# Batch correction
+#data.qc1.seq.combat$counts <- ComBat_seq(counts=data.qc1.seq$counts,
+#                                         batch=data.qc1.seq$metadata$Batch)
+if ("Sex" %in% colnames(data.qc1.seq$metadata)) {
+  data.qc1.seq.combat$counts <- 
+    ComBat_seq(counts=data.qc1.seq$counts,
+               batch=data.qc1.seq$metadata$Batch,
+               group=paste(data.qc1.seq$metadata$Tissue, data.qc1.seq$metadata$Sex, sep="_"))  
+} else {
+  data.qc1.seq.combat$counts <- 
+    ComBat_seq(counts=data.qc1.seq$counts,
+               batch=data.qc1.seq$metadata$Batch,
+               group=data.qc1.seq$metadata$Tissue)    
+}
+
+data.qc1.seq.combat$counts.gf <-
+  filter_genes_by_cpm_per_condition(data.qc1.seq.combat$counts, data.qc1.seq.combat$metadata, min.cpm=params$min.cpm)
+
+# Normalize across all conditions
+data.qc1.seq.combat$tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc1.seq.combat$counts.gf, data.qc1.seq.combat$metadata, log2=FALSE)
+
+data.qc1.seq.combat$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc1.seq.combat$counts.gf, data.qc1.seq.combat$metadata,
+                              log2=TRUE, shift.min=TRUE)
+
+plot_detected_genes_vs_mapped_reads(data.qc1.seq.combat$metadata, params$min.genes, params$min.reads)
+```
+
 ### Plot - PCA {.tabset}
 ```{r plot-pca-sequencing-quality-filter, fig.align='center'}
 data.qc1.seq$pca <- run_pca(data.qc1.seq$log2.tmm.cpm.gf)
+data.qc1.seq.combat$pca <- run_pca(data.qc1.seq.combat$log2.tmm.cpm.gf)
 ```
 
 #### By mapped reads
 ```{r plot-pca-sequencing-quality-filter-mapped-reads, fig.align='center'}
 plot_pca_by_mapped_reads_gradient(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_mapped_reads_gradient(data.qc1.seq.combat$pca, data.qc1.seq.combat$metadata)
+
 plot_pca_by_detected_genes_gradient(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_detected_genes_gradient(data.qc1.seq.combat$pca, data.qc1.seq.combat$metadata)
 ```
 
 #### By detected genes
 ```{r plot-pca-sequencing-quality-filter-detected-genes, fig.align='center'}
 plot_pca_by_detected_genes_gradient(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_detected_genes_gradient(data.qc1.seq.combat$pca, data.qc1.seq.combat$metadata)
 ```
 
 #### By batch
 ```{r plot-pca-sequencing-quality-filter-batch, fig.align='center'}
 plot_pca_by_batch(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_batch(data.qc1.seq.combat$pca, data.qc1.seq.combat$metadata)
 ```
 
 #### By condition
 ```{r plot-pca-sequencing-quality-filter-condition, fig.align='center'}
 plot_pca_by_condition(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_condition(data.qc1.seq.combat$pca, data.qc1.seq.combat$metadata)
+
 plot_pca_by_condition_pc34(data.qc1.seq$pca, data.qc1.seq$metadata)
+plot_pca_by_condition_pc34(data.qc1.seq.combat$pca, data.qc1.seq.combat$metadata)
 ```
 
 ### Plot - Correlation heatmap
 ```{r plot-heatmap-sequencing-quality-filter, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc1.seq$cor.matrix <- cor(data.qc1.seq$log2.tmm.cpm.gf, method="pearson")
-
 plot_correlation_heatmap(data.qc1.seq$cor.matrix, data.qc1.seq$metadata, clust=TRUE)
+
+data.qc1.seq.combat$cor.matrix <- cor(data.qc1.seq.combat$log2.tmm.cpm.gf, method="pearson")
+plot_correlation_heatmap(data.qc1.seq.combat$cor.matrix, data.qc1.seq.combat$metadata, clust=TRUE)
 ```
 
 ## Filter 2: Within-tissue correlation
 
-Iterative removal of low correlation samples
-```{r filter-samples-by-correlation}
+### Iterative removal of low correlation samples
+
+#### No batch correction
+```{r}
 data.qc2.cor <- 
   iterate_filter_samples_by_correlation(
     data.qc1.seq$counts, data.qc1.seq$metadata, min.cpm=params$min.cpm, round=2)
@@ -231,6 +341,7 @@ data.qc2.cor <-
 data.qc2.cor <- 
   filter_conditions_by_min_replicates(
     data.qc2.cor$counts, data.qc2.cor$metadata, params$min.replicates)
+
 data.qc2.cor$counts.gf <-
   filter_genes_by_cpm_per_condition(
     data.qc2.cor$counts, data.qc2.cor$metadata, min.cpm=params$min.cpm)
@@ -244,38 +355,83 @@ data.qc2.cor$log2.tmm.cpm.gf <-
                               log2=TRUE, shift.min=TRUE)
 ```
 
+#### With batch correction
+```{r filter-samples-by-correlation}
+data.qc2.cor.combat <- list()
+data.qc2.cor.combat$conditions <- data.qc2.cor$conditions
+data.qc2.cor.combat$metadata <- data.qc2.cor$metadata
+
+# Batch correction
+#data.qc2.cor.combat$counts <-
+#  ComBat_seq(counts=data.qc2.cor$counts,
+#             batch=data.qc2.cor$metadata$Batch)
+if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
+  data.qc2.cor.combat$counts <- 
+    ComBat_seq(counts=data.qc2.cor$counts,
+               batch=data.qc2.cor$metadata$Batch,
+               group=paste(data.qc2.cor$metadata$Tissue, data.qc2.cor$metadata$Sex, sep="_"))  
+} else {
+  data.qc2.cor.combat$counts <- 
+    ComBat_seq(counts=data.qc2.cor$counts,
+               batch=data.qc2.cor$metadata$Batch,
+               group=data.qc2.cor$metadata$Tissue)    
+}
+
+data.qc2.cor.combat$counts.gf <-
+  filter_genes_by_cpm_per_condition(
+    data.qc2.cor.combat$counts, data.qc2.cor.combat$metadata, min.cpm=params$min.cpm)
+
+# Normalize across all conditions
+data.qc2.cor.combat$tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc2.cor.combat$counts.gf, data.qc2.cor.combat$metadata, log2=FALSE)
+
+data.qc2.cor.combat$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc2.cor.combat$counts.gf, data.qc2.cor.combat$metadata, 
+                              log2=TRUE, shift.min=TRUE)
+```
+
 ### Plot - PCA {.tabset}
 ```{r plot-pca-correlation-filter, fig.align='center'}
 data.qc2.cor$pca <- run_pca(data.qc2.cor$log2.tmm.cpm.gf)
+data.qc2.cor.combat$pca <- run_pca(data.qc2.cor.combat$log2.tmm.cpm.gf)
 ```
 
 #### By batch
 ```{r plot-pca-correlation-filter-batch, fig.align='center'}
 plot_pca_by_batch(data.qc2.cor$pca, data.qc2.cor$metadata)
+plot_pca_by_batch(data.qc2.cor.combat$pca, data.qc2.cor.combat$metadata)
 ```
 
 #### By condition
 ```{r plot-pca-correlation-filter-condition, fig.align='center'}
 plot_pca_by_condition(data.qc2.cor$pca, data.qc2.cor$metadata)
+plot_pca_by_condition(data.qc2.cor.combat$pca, data.qc2.cor.combat$metadata)
+
 plot_pca_by_condition_pc34(data.qc2.cor$pca, data.qc2.cor$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor.combat$pca, data.qc2.cor.combat$metadata)
 ```
 
 ### Plot - Correlation heatmap
 ```{r plot-heatmap-correlation-filter, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc2.cor$cor.matrix <- cor(data.qc2.cor$log2.tmm.cpm.gf, method="pearson")
-
 plot_correlation_heatmap(data.qc2.cor$cor.matrix, data.qc2.cor$metadata, clust=TRUE)
+
+data.qc2.cor.combat$cor.matrix <- cor(data.qc2.cor.combat$log2.tmm.cpm.gf, method="pearson")
+plot_correlation_heatmap(data.qc2.cor.combat$cor.matrix, data.qc2.cor.combat$metadata, clust=TRUE)
 ```
 
 ### Boxplot - Detected genes per organ
 ```{r boxplot-detected-genes-correlation-filter, fig.width=18, fig.height=10}
 boxplot_detected_genes(data.qc2.cor$metadata)
+boxplot_detected_genes(data.qc2.cor.combat$metadata)
 ```
 
 
 ## Gene biotype
 
 Split genes by biotype
+
+### No batch correction
 ```{r split-by-gene-biotype}
 data.qc2.cor$coding$log2.tmm.cpm.gf <-
   data.qc2.cor$log2.tmm.cpm.gf[
@@ -297,31 +453,63 @@ nrow(data.qc2.cor$log2.tmm.cpm.gf) -
   (nrow(data.qc2.cor$coding$log2.tmm.cpm.gf) + nrow(data.qc2.cor$lncrna$log2.tmm.cpm.gf))
 ```
 
+### With batch correction
+```{r}
+data.qc2.cor.combat$coding$log2.tmm.cpm.gf <-
+  data.qc2.cor.combat$log2.tmm.cpm.gf[
+    rownames(data.qc2.cor.combat$log2.tmm.cpm.gf) 
+        %in% biotype$Gene.stable.ID[biotype$Gene.type=="protein_coding"],]
+
+data.qc2.cor.combat$lncrna$log2.tmm.cpm.gf <-
+  data.qc2.cor.combat$log2.tmm.cpm.gf[
+    rownames(data.qc2.cor.combat$log2.tmm.cpm.gf) 
+        %in% biotype$Gene.stable.ID[biotype$Gene.type=="lncRNA" | 
+                                      biotype$Gene.type=="lincRNA"],]
+
+# Protein-coding
+print(nrow(data.qc2.cor.combat$coding$log2.tmm.cpm.gf))
+# lncRNA
+print(nrow(data.qc2.cor.combat$lncrna$log2.tmm.cpm.gf))
+# Neither
+nrow(data.qc2.cor.combat$log2.tmm.cpm.gf) - 
+  (nrow(data.qc2.cor.combat$coding$log2.tmm.cpm.gf) + nrow(data.qc2.cor.combat$lncrna$log2.tmm.cpm.gf))
+```
+
+
 ### Protein-coding
 
 #### Plot - PCA {.tabset}
 ```{r plot-pca-protein-coding, fig.align='center'}
 data.qc2.cor$coding$pca <- run_pca(data.qc2.cor$coding$log2.tmm.cpm.gf)
+data.qc2.cor.combat$coding$pca <- run_pca(data.qc2.cor.combat$coding$log2.tmm.cpm.gf)
 ```
 
 ##### By batch
 ```{r plot-pca-protein-coding-batch, fig.align='center'}
 plot_pca_by_batch(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
+plot_pca_by_batch(data.qc2.cor.combat$coding$pca, data.qc2.cor.combat$metadata)
 ```
 
 ##### By condition
 ```{r plot-pca-protein-coding-condition, fig.align='center'}
 plot_pca_by_condition(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
+plot_pca_by_condition(data.qc2.cor.combat$coding$pca, data.qc2.cor.combat$metadata)
+
 plot_pca_by_condition_pc34(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor.combat$coding$pca, data.qc2.cor.combat$metadata)
 ```
 
 #### Plot - Correlation heatmap
 ```{r plot-heatmap-protein-coding, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc2.cor$coding$cor.matrix <- 
   cor(data.qc2.cor$coding$log2.tmm.cpm.gf, method="pearson")
-
 plot_correlation_heatmap(data.qc2.cor$coding$cor.matrix, 
                          data.qc2.cor$metadata, clust=TRUE)
+
+data.qc2.cor.combat$coding$cor.matrix <-
+  cor(data.qc2.cor.combat$coding$log2.tmm.cpm.gf, method="pearson")
+plot_correlation_heatmap(data.qc2.cor.combat$coding$cor.matrix,
+                         data.qc2.cor.combat$metadata, clust=TRUE)
 ```
 
 ### lncRNA
@@ -329,29 +517,40 @@ plot_correlation_heatmap(data.qc2.cor$coding$cor.matrix,
 #### Plot - PCA {.tabset}
 ```{r plot-pca-lncrna, fig.align='center'}
 data.qc2.cor$lncrna$pca <- run_pca(data.qc2.cor$lncrna$log2.tmm.cpm.gf)
+data.qc2.cor.combat$lncrna$pca <- run_pca(data.qc2.cor.combat$lncrna$log2.tmm.cpm.gf)
 ```
 
 ##### By batch
 ```{r plot-pca-lncrna-batch, fig.align='center'}
 plot_pca_by_batch(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
+plot_pca_by_batch(data.qc2.cor.combat$lncrna$pca, data.qc2.cor.combat$metadata)
 ```
 
 ##### By condition
 ```{r plot-pca-lncrna-condition, fig.align='center'}
 plot_pca_by_condition(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
+plot_pca_by_condition(data.qc2.cor.combat$lncrna$pca, data.qc2.cor.combat$metadata)
+
 plot_pca_by_condition_pc34(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor.combat$lncrna$pca, data.qc2.cor.combat$metadata)
 ```
 
 #### Plot - Correlation heatmap
 ```{r plot-heatmap-lncrna, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc2.cor$lncrna$cor.matrix <- 
   cor(data.qc2.cor$lncrna$log2.tmm.cpm.gf, method="pearson")
-
 plot_correlation_heatmap(data.qc2.cor$lncrna$cor.matrix, 
                          data.qc2.cor$metadata, clust=TRUE)
+
+data.qc2.cor.combat$lncrna$cor.matrix <-
+  cor(data.qc2.cor.combat$lncrna$log2.tmm.cpm.gf, method="pearson")
+plot_correlation_heatmap(data.qc2.cor.combat$lncrna$cor.matrix,
+                         data.qc2.cor.combat$metadata, clust=TRUE)
 ```
 
 ## Reduced (all nonzero) expression matrix
+
+### No batch correction
 ```{r keep-all-nonzero-counts-only}
 data.qc2.cor.nonzero <- data.qc2.cor[c("conditions","metadata","counts")]
 
@@ -369,32 +568,59 @@ data.qc2.cor.nonzero$log2.tmm.cpm.gf <-
                               log2=TRUE, shift.min=FALSE)
 ```
 
+### With batch correction
+```{r keep-all-nonzero-counts-only-combat}
+data.qc2.cor.nonzero.combat <- data.qc2.cor.combat[c("conditions","metadata","counts")]
+
+# Only keep genes with no zero counts across all samples
+# to set the same number of 'expressed genes' per condition
+data.qc2.cor.nonzero.combat$counts.gf <-
+  keep_full_nonzero_expression_matrix(data.qc2.cor.nonzero.combat$counts)
+
+# Normalize across all conditions
+data.qc2.cor.nonzero.combat$tmm.cpm.gf <-
+  transform_counts_to_tmm_cpm(data.qc2.cor.nonzero.combat$counts.gf, data.qc2.cor.nonzero.combat$metadata, log2=FALSE)
+
+data.qc2.cor.nonzero.combat$log2.tmm.cpm.gf <- 
+  transform_counts_to_tmm_cpm(data.qc2.cor.nonzero.combat$counts.gf, data.qc2.cor.nonzero.combat$metadata, 
+                              log2=TRUE, shift.min=FALSE)
+```
+
 ### Plot - PCA {.tabset}
 ```{r plot-pca-correlation-filter-nonzero, fig.align='center'}
 data.qc2.cor.nonzero$pca <- run_pca(data.qc2.cor.nonzero$log2.tmm.cpm.gf)
+data.qc2.cor.nonzero.combat$pca <- run_pca(data.qc2.cor.nonzero.combat$log2.tmm.cpm.gf)
 ```
 
 #### By batch
 ```{r plot-pca-correlation-filter-nonzero-batch, fig.align='center'}
 plot_pca_by_batch(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
+plot_pca_by_batch(data.qc2.cor.nonzero.combat$pca, data.qc2.cor.nonzero.combat$metadata)
 ```
 
 #### By condition
 ```{r plot-pca-correlation-filter-nonzero-condition, fig.align='center'}
 plot_pca_by_condition(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
+plot_pca_by_condition(data.qc2.cor.nonzero.combat$pca, data.qc2.cor.nonzero.combat$metadata)
+
 plot_pca_by_condition_pc34(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
+plot_pca_by_condition_pc34(data.qc2.cor.nonzero.combat$pca, data.qc2.cor.nonzero.combat$metadata)
 ```
 
 
 ### Plot - Correlation heatmap
 ```{r plot-heatmap-correlation-filter-nonzero, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc2.cor.nonzero$cor.matrix <- cor(data.qc2.cor.nonzero$log2.tmm.cpm.gf, method="pearson")
-
 plot_correlation_heatmap(data.qc2.cor.nonzero$cor.matrix, data.qc2.cor.nonzero$metadata, clust=TRUE)
+
+data.qc2.cor.nonzero.combat$cor.matrix <- cor(data.qc2.cor.nonzero.combat$log2.tmm.cpm.gf, method="pearson")
+plot_correlation_heatmap(data.qc2.cor.nonzero.combat$cor.matrix, data.qc2.cor.nonzero.combat$metadata, clust=TRUE)
 ```
 
 
 ## Normalization per condition
+
+### No batch correction
 ```{r normalize-per-condition, eval=params$normalize.by.condition}
 data.conditions <- vector(mode="list", length=6)
 names(data.conditions) <- 
@@ -414,7 +640,7 @@ if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
         subset_expr_matrix(data.qc2.cor$counts, tissue=t, sex=s)
       })
     })
-  
+
   data.conditions$counts.gf <-
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
       lapply(setNames(levels(Sex), levels(Sex)), function(s) {
@@ -422,7 +648,7 @@ if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
                             min.cpm=params$min.cpm, tmm=FALSE)
       })
     })
-
+  
   data.conditions$tmm.cpm.gf <-
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
       lapply(setNames(levels(Sex), levels(Sex)), function(s) {
@@ -450,7 +676,7 @@ if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
       subset_expr_matrix(data.qc2.cor$counts, tissue=t)
     })
-  
+ 
   data.conditions$counts.gf <-
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
       filter_genes_by_cpm(data.conditions$counts[[t]], 
@@ -475,34 +701,119 @@ if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
 }
 ```
 
+### With batch correction
+```{r normalize-per-condition-combat}
+data.conditions.combat <- vector(mode="list", length=6)
+names(data.conditions.combat) <- 
+  c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
+
+data.conditions.combat$conditions <- data.qc2.cor.combat$conditions
+data.conditions.combat$metadata <- data.qc2.cor.combat$metadata
+
+Tissue <- as.factor(data.qc2.cor.combat$metadata$Tissue)
+
+if ("Sex" %in% colnames(data.qc2.cor.combat$metadata)) {
+  Sex <- as.factor(data.qc2.cor.combat$metadata$Sex)
+  
+  data.conditions.combat$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        subset_expr_matrix(data.qc2.cor.combat$counts, tissue=t, sex=s)
+      })
+    })
+
+  data.conditions.combat$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        filter_genes_by_cpm(data.conditions.combat$counts[[t]][[s]], 
+                            min.cpm=params$min.cpm, tmm=FALSE)
+      })
+    })
+  
+  data.conditions.combat$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions.combat$counts.gf[[t]][[s]],
+          data.conditions.combat$metadata[data.conditions.combat$metadata$Tissue==t &
+                                  data.conditions.combat$metadata$Sex==s,],
+          log2=FALSE)
+      })
+    })
+    
+  data.conditions.combat$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions.combat$counts.gf[[t]][[s]],
+          data.conditions.combat$metadata[data.conditions.combat$metadata$Tissue==t &
+                                  data.conditions.combat$metadata$Sex==s,],
+          log2=TRUE, shift.min=TRUE)
+      })
+    })
+  
+} else {
+  data.conditions.combat$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      subset_expr_matrix(data.qc2.cor.combat$counts, tissue=t)
+    })
+ 
+  data.conditions.combat$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      filter_genes_by_cpm(data.conditions.combat$counts[[t]], 
+                          min.cpm=params$min.cpm, tmm=FALSE)
+    })
+  
+  data.conditions.combat$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions.combat$counts.gf[[t]],
+          data.conditions.combat$metadata[data.conditions.combat$metadata$Tissue==t,],
+          log2=FALSE)
+    })
+  
+  data.conditions.combat$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions.combat$counts.gf[[t]],
+          data.conditions.combat$metadata[data.conditions.combat$metadata$Tissue==t,],
+          log2=TRUE, shift.min=TRUE)
+    })
+}
+```
+
+
 ### Reduced (all nonzero) expression matrix
+
+#### No batch correction
 ```{r normalize-per-condition-nonzero, eval=params$normalize.by.condition}
 data.conditions.nonzero <- vector(mode="list", length=6)
 names(data.conditions.nonzero) <- 
   c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
 
-data.conditions.nonzero$conditions <- data.qc2.cor$conditions
-data.conditions.nonzero$metadata <- data.qc2.cor$metadata
+data.conditions.nonzero$conditions <- data.qc2.cor.nonzero$conditions
+data.conditions.nonzero$metadata <- data.qc2.cor.nonzero$metadata
 
-Tissue <- as.factor(data.qc2.cor$metadata$Tissue)
+Tissue <- as.factor(data.qc2.cor.nonzero$metadata$Tissue)
 
-if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
-  Sex <- as.factor(data.qc2.cor$metadata$Sex)
+if ("Sex" %in% colnames(data.qc2.cor.nonzero$metadata)) {
+  Sex <- as.factor(data.qc2.cor.nonzero$metadata$Sex)
   
   data.conditions.nonzero$counts <-
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
       lapply(setNames(levels(Sex), levels(Sex)), function(s) {
-        subset_expr_matrix(data.qc2.cor$counts, tissue=t, sex=s)
-      })
-    })
-  
-  data.conditions.nonzero$counts.gf <-
-    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
-      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
-        data.conditions.nonzero$counts[[t]][[s]][rownames(data.qc2.cor.nonzero$counts.gf),]
+        subset_expr_matrix(data.qc2.cor.nonzero$counts, tissue=t, sex=s)
       })
     })
 
+  data.conditions.nonzero$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        filter_genes_by_cpm(data.conditions.nonzero$counts[[t]][[s]], 
+                            min.cpm=params$min.cpm, tmm=FALSE)
+      })
+    })
+  
   data.conditions.nonzero$tmm.cpm.gf <-
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
       lapply(setNames(levels(Sex), levels(Sex)), function(s) {
@@ -528,12 +839,13 @@ if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
 } else {
   data.conditions.nonzero$counts <-
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
-      subset_expr_matrix(data.qc2.cor$counts, tissue=t)
+      subset_expr_matrix(data.qc2.cor.nonzero$counts, tissue=t)
     })
-  
+ 
   data.conditions.nonzero$counts.gf <-
     lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
-      data.conditions.nonzero$counts[[t]][rownames(data.qc2.cor.nonzero$counts.gf),]
+      filter_genes_by_cpm(data.conditions.nonzero$counts[[t]], 
+                          min.cpm=params$min.cpm, tmm=FALSE)
     })
   
   data.conditions.nonzero$tmm.cpm.gf <-
@@ -554,6 +866,87 @@ if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
 }
 ```
 
+### With batch correction
+```{r normalize-per-condition-nonzero-combat}
+data.conditions.nonzero.combat <- vector(mode="list", length=6)
+names(data.conditions.nonzero.combat) <- 
+  c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
+
+data.conditions.nonzero.combat$conditions <- data.qc2.cor.nonzero.combat$conditions
+data.conditions.nonzero.combat$metadata <- data.qc2.cor.nonzero.combat$metadata
+
+Tissue <- as.factor(data.qc2.cor.nonzero.combat$metadata$Tissue)
+
+if ("Sex" %in% colnames(data.qc2.cor.nonzero.combat$metadata)) {
+  Sex <- as.factor(data.qc2.cor.nonzero.combat$metadata$Sex)
+  
+  data.conditions.nonzero.combat$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        subset_expr_matrix(data.qc2.cor.nonzero.combat$counts, tissue=t, sex=s)
+      })
+    })
+
+  data.conditions.nonzero.combat$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        filter_genes_by_cpm(data.conditions.nonzero.combat$counts[[t]][[s]], 
+                            min.cpm=params$min.cpm, tmm=FALSE)
+      })
+    })
+  
+  data.conditions.nonzero.combat$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions.nonzero.combat$counts.gf[[t]][[s]],
+          data.conditions.nonzero.combat$metadata[data.conditions.nonzero.combat$metadata$Tissue==t &
+                                  data.conditions.nonzero.combat$metadata$Sex==s,],
+          log2=FALSE)
+      })
+    })
+    
+  data.conditions.nonzero.combat$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.conditions.nonzero.combat$counts.gf[[t]][[s]],
+          data.conditions.nonzero.combat$metadata[data.conditions.nonzero.combat$metadata$Tissue==t &
+                                  data.conditions.nonzero.combat$metadata$Sex==s,],
+          log2=TRUE, shift.min=TRUE)
+      })
+    })
+  
+} else {
+  data.conditions.nonzero.combat$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      subset_expr_matrix(data.qc2.cor.nonzero.combat$counts, tissue=t)
+    })
+ 
+  data.conditions.nonzero.combat$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      filter_genes_by_cpm(data.conditions.nonzero.combat$counts[[t]], 
+                          min.cpm=params$min.cpm, tmm=FALSE)
+    })
+  
+  data.conditions.nonzero.combat$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions.nonzero.combat$counts.gf[[t]],
+          data.conditions.nonzero.combat$metadata[data.conditions.nonzero.combat$metadata$Tissue==t,],
+          log2=FALSE)
+    })
+  
+  data.conditions.nonzero.combat$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.conditions.nonzero.combat$counts.gf[[t]],
+          data.conditions.nonzero.combat$metadata[data.conditions.nonzero.combat$metadata$Tissue==t,],
+          log2=TRUE, shift.min=TRUE)
+    })
+}
+```
+
 
 # Save
 ```{r save-objects-1}
@@ -566,11 +959,23 @@ saveRDS(data.qc2.cor,
                         params$min.replicates, "reps",
                         "data.qc2.cor.rds", sep="_")))
 
+saveRDS(data.qc2.cor.combat, 
+        file.path(params$output.rds.path, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc2.cor.combat.rds", sep="_")))
+
 saveRDS(data.qc2.cor.nonzero, 
         file.path(params$output.rds.path, 
                   paste(params$species, 
                         params$min.replicates, "reps",
                         "data.qc2.cor.nonzero.rds", sep="_")))
+
+saveRDS(data.qc2.cor.nonzero.combat, 
+        file.path(params$output.rds.path, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc2.cor.nonzero.combat.rds", sep="_")))
 ```
 
 ```{r save-objects-2, eval=params$normalize.by.condition}
@@ -581,9 +986,21 @@ saveRDS(data.conditions,
                         params$min.replicates, "reps",
                         "data.conditions.rds", sep="_")))
 
+saveRDS(data.conditions.combat, 
+        file.path(params$output.rds.path, 
+                  paste(params$species,
+                        params$min.replicates, "reps",
+                        "data.conditions.combat.rds", sep="_")))
+
 saveRDS(data.conditions.nonzero, 
         file.path(params$output.rds.path, 
                   paste(params$species,
                         params$min.replicates, "reps",
                         "data.conditions.nonzero.rds", sep="_")))
+
+saveRDS(data.conditions.nonzero.combat, 
+        file.path(params$output.rds.path, 
+                  paste(params$species,
+                        params$min.replicates, "reps",
+                        "data.conditions.nonzero.combat.rds", sep="_")))
 ```
