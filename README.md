@@ -1,6 +1,6 @@
 # Inter-individual gene expression variability implies stable regulation of brain-biased genes across organs
 
-Christabel F. Bucao<sup>1,2*</sup>, Consolée Aletti<sup>1</sup>, Alexandre Laverré<sup>1,2</sup>, Sébastien Moretti<sup>1,2</sup>, Alexandra Trouvé<sup>1</sup>, Andrew W. Thompson<sup>3,4,5</sup>, Brett L. Racicot<sup>4</sup>, Catherine A. Wilson<sup>6</sup>, Julien Bobe<sup>7</sup>, Ingo Braasch<sup>4,5</sup>, Yann Guiguen<sup>7</sup>, John H. Postlethwait<sup>6</sup>, Marc Robinson-Rechavi<sup>1,2</sup>
+Christabel F. Bucao<sup>1,2</sup>, Consolée Aletti<sup>1</sup>, Alexandre Laverré<sup>1,2</sup>, Sébastien Moretti<sup>1,2</sup>, Alexandra Trouvé<sup>1</sup>, Andrew W. Thompson<sup>3,4,5</sup>, Brett L. Racicot<sup>4</sup>, Catherine A. Wilson<sup>6</sup>, Julien Bobe<sup>7</sup>, Ingo Braasch<sup>4,5</sup>, Yann Guiguen<sup>7</sup>, John H. Postlethwait<sup>6</sup>, Marc Robinson-Rechavi<sup>1,2</sup>
 
 <sup>1</sup> Department of Ecology and Evolution, University of Lausanne, Lausanne, Switzerland
 \
@@ -15,8 +15,6 @@ Christabel F. Bucao<sup>1,2*</sup>, Consolée Aletti<sup>1</sup>, Alexandre Lave
 <sup>6</sup> ﻿Institute of Neuroscience, University of Oregon, Eugene, Oregon, USA
 \
 <sup>7</sup> INRAE, LPGP, Rennes 35000, France
-
-<sup>*</sup> Corresponding author: christabelfloi.bucao@unil.ch
 
 ## Abstract
 
@@ -51,6 +49,7 @@ Phenotypic variation among individuals plays a key role in evolution, since vari
 
 ## Links
 **2025-09-02:** Check out the [updated preprint](https://doi.org/10.1101/2024.11.11.623020)!
+\
 **2024-11-12:** Check out the [preprint](https://doi.org/10.1101/2024.11.11.623020)!
 
 
