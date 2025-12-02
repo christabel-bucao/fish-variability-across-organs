@@ -950,57 +950,67 @@ if ("Sex" %in% colnames(data.qc2.cor.nonzero.combat$metadata)) {
 
 # Save
 ```{r save-objects-1}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
-
 # Normalized across all conditions
+
+## No ComBat
+no_combat_dir <- file.path(params$output.rds.path,"no_combat")
+if (!dir.exists(no_combat_dir)) { dir.create(no_combat_dir, recursive=TRUE, showWarnings=FALSE) }
+
 saveRDS(data.qc2.cor, 
-        file.path(params$output.rds.path, 
+        file.path(no_combat_dir, 
                   paste(params$species, 
                         params$min.replicates, "reps",
                         "data.qc2.cor.rds", sep="_")))
 
-saveRDS(data.qc2.cor.combat, 
-        file.path(params$output.rds.path, 
-                  paste(params$species, 
-                        params$min.replicates, "reps",
-                        "data.qc2.cor.combat.rds", sep="_")))
-
 saveRDS(data.qc2.cor.nonzero, 
-        file.path(params$output.rds.path, 
+        file.path(no_combat_dir, 
                   paste(params$species, 
                         params$min.replicates, "reps",
                         "data.qc2.cor.nonzero.rds", sep="_")))
 
-saveRDS(data.qc2.cor.nonzero.combat, 
-        file.path(params$output.rds.path, 
+## With ComBat
+combat_dir <- file.path(params$output.rds.path, "combat")
+if (!dir.exists(combat_dir)) { dir.create(combat_dir, recursive=TRUE, showWarnings=FALSE) }
+
+saveRDS(data.qc2.cor.combat, 
+        file.path(combat_dir, 
                   paste(params$species, 
                         params$min.replicates, "reps",
-                        "data.qc2.cor.nonzero.combat.rds", sep="_")))
+                        "data.qc2.cor.rds", sep="_")))
+
+saveRDS(data.qc2.cor.nonzero.combat, 
+        file.path(combat_dir, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc2.cor.nonzero.rds", sep="_")))
+
 ```
 
 ```{r save-objects-2, eval=params$normalize.by.condition}
 # Normalized per condition
+## No ComBat
 saveRDS(data.conditions, 
-        file.path(params$output.rds.path, 
+        file.path(no_combat_dir, 
                   paste(params$species,
                         params$min.replicates, "reps",
                         "data.conditions.rds", sep="_")))
 
-saveRDS(data.conditions.combat, 
-        file.path(params$output.rds.path, 
-                  paste(params$species,
-                        params$min.replicates, "reps",
-                        "data.conditions.combat.rds", sep="_")))
-
 saveRDS(data.conditions.nonzero, 
-        file.path(params$output.rds.path, 
+        file.path(no_combat_dir, 
                   paste(params$species,
                         params$min.replicates, "reps",
                         "data.conditions.nonzero.rds", sep="_")))
 
-saveRDS(data.conditions.nonzero.combat, 
-        file.path(params$output.rds.path, 
+## With ComBat
+saveRDS(data.conditions.combat, 
+        file.path(combat_dir, 
                   paste(params$species,
                         params$min.replicates, "reps",
-                        "data.conditions.nonzero.combat.rds", sep="_")))
+                        "data.conditions.rds", sep="_")))
+
+saveRDS(data.conditions.nonzero.combat, 
+        file.path(combat_dir, 
+                  paste(params$species,
+                        params$min.replicates, "reps",
+                        "data.conditions.nonzero.rds", sep="_")))
 ```
