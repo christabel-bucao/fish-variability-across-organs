@@ -10,6 +10,7 @@ params:
   species: "DRE"
   species.name: "Danio rerio"
   tau.cutoff: 0.30
+  combat: FALSE
 ---
 
 # Setup {.tabset}
@@ -36,27 +37,40 @@ source("../functions/selection_plots.R")
 
 ### Filtered selection data
 ```{r import-filtered-selection-data}
-# Load saved data from 08_Selection.Rmd
+if (!params$combat) {
+  input.selection.path <- file.path(params$input.selection.rds.path, "no_combat")
+} else {
+  input.selection.path <- file.path(params$input.selection.rds.path, "combat")
+}
 
+# Load saved data from 08_Selection.Rmd
 ## Filtered Selectome results
 selectome.sub <- readRDS(
-  file.path(params$input.selection.rds.path,
+  file.path(input.selection.path,
             paste(params$species, "selectome.sub.rds", sep="_")))
 
 ### With median variability across conditions
 #### Background gene set
 selectome.bgd.groupby.gene.ev.median <- readRDS(
-  file.path(params$input.selection.rds.path,
-            paste(params$species, "selectome.bgd.groupby.gene.ev.median.rds", sep="_")))
+  file.path(input.selection.path,
+            paste(params$species, "selectome.bgd.groupby.gene.ev.median.rds", sep="_")))  
+
 ```
 
 ### Expression specificity (tau)
 ```{r import-tau}
+if (!params$combat) {
+  input.tau.path <- file.path(params$input.tau.rds.path, "no_combat")
+} else {
+  input.tau.path <- file.path(params$input.tau.rds.path, "combat")
+}
+
 # Load expression specificity computations from 10_Expression_Specificity.Rmd
 ## Conditions available in all species
 filtered.samples <- readRDS(
-  file.path(params$input.tau.rds.path,
-            paste(params$species, "filtered.samples.common.rds", sep="_")))  
+  file.path(input.tau.path,
+            paste(params$species, "filtered.samples.common.rds", sep="_")))   
+ 
 ```
 
 # Main {.tabset}
@@ -157,30 +171,37 @@ boxplot_omega0_varbins(selection.tau.tissue.groupby.gene.broad, compare.extremes
 
 #### Organ-biased genes
 ```{r boxplot-omega0-varbins-biased, fig.width=10, fig.height=8}
-boxplot_omega0_varbins(selection.tau.tissue.groupby.gene.biased, compare.extremes=TRUE, title=params$species.name)
+try(boxplot_omega0_varbins(selection.tau.tissue.groupby.gene.biased, compare.extremes=TRUE, title=params$species.name))
 ```
 
 
 # Save
 ```{r save-objects}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+if (!params$combat) {
+  output.path <- file.path(params$output.rds.path, "no_combat")
+} else {
+  output.path <- file.path(params$output.rds.path, "combat")
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 saveRDS(selection.tau.tissue,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, 
                         paste("selection", paste0("tau", params$tau.cutoff),
                               "tissue", "rds", sep="."), sep="_")))
 
 saveRDS(selection.tau.tissue.biased,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, 
                         paste("selection", paste0("tau", params$tau.cutoff),
                               "tissue.biased", "rds", sep="."), sep="_")))
 
 saveRDS(selection.tau.tissue.groupby.gene,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, 
                         paste("selection", paste0("tau", params$tau.cutoff),
-                              "tissue.groupby.gene", "rds", sep="."), sep="_")))
+                              "tissue.groupby.gene", "rds", sep="."), sep="_")))  
+
 ```
 
