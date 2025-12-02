@@ -10,6 +10,7 @@ params:
   species: "DRE"
   species.name: "Danio rerio"
   min.replicates: 10
+  combat: FALSE
 ---
 
 This notebook runs the bimodality test for organ-sex conditions with at least (`r params$min.replicates`) replicates and summarizes the results.
@@ -52,18 +53,30 @@ sessionInfo()
 
 ### Expression levels
 ```{r import-expression-levels}
+if (!params$combat) {
+  input.samples.path <- file.path(params$input.samples.rds.path, "no_combat")
+} else {
+  input.samples.path <- file.path(params$input.samples.rds.path, "combat")
+}
+
 # Load saved data from 01_Filter_Samples.Rmd
 # Normalized within-condition
 filtered.samples <- readRDS(
-  file.path(params$input.samples.rds.path,
-            paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+  file.path(input.samples.path,
+            paste(params$species, "4_reps_data.conditions.rds", sep="_")))  
 ```
 
 ### Expression variability
 ```{r import-variability}
+if (!params$combat) {
+  input.variability.path <- file.path(params$input.variability.rds.path, "no_combat")
+} else {
+  input.variability.path <- file.path(params$input.variability.rds.path, "combat")
+}
+
 # Load processed expression variability estimates from 03_Variability_Plots.Rmd
 jack.bind <- readRDS(
-  file.path(params$input.variability.rds.path,
+  file.path(input.variability.path,
             paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
 ```
 
@@ -213,7 +226,13 @@ if ("gonads" %in% filtered.samples.retained$condtions$Tissue) {
 
 # Save
 ```{r save-objects}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+if (!params$combat) {
+  output.path <- file.path(params$output.rds.path, "no_combat")
+} else {
+  output.path <- file.path(params$output.rds.path, "combat")
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 saveRDS(filtered.samples.retained,
         file.path(params$output.rds.path, 
@@ -233,6 +252,7 @@ saveRDS(bimodality.test,
 
 saveRDS(bimodality.test.bind,
         file.path(params$output.rds.path, 
-                  paste(params$species, "bimodality.test.bind.rds", sep="_")))
+                  paste(params$species, "bimodality.test.bind.rds", sep="_")))  
+
 ```
 
