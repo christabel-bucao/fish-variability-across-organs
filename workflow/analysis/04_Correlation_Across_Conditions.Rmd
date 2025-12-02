@@ -9,6 +9,7 @@ params:
   species: "DRE"
   species.name: "Danio rerio"
   all.nonzero.matrix: FALSE
+  combat: FALSE
 ---
 
 # Setup {.tabset}
@@ -48,15 +49,23 @@ sessionInfo()
 
 ### Expression variability
 ```{r import--variability}
+if (!params$combat) {
+  input.variability.path <- file.path(params$input.variability.rds.path, "no_combat")
+} else {
+  input.variability.path <- file.path(params$input.variability.rds.path, "combat")
+}
+
 # Load processed expression variability estimates from 03_Variability_Plots.Rmd
 if (!params$all.nonzero.matrix) {
   jack.bind<- readRDS(
-    file.path(params$input.variability.rds.path,
-              paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
+    file.path(input.variability.path,
+              paste(params$species, "jack.resid.cv.bind.rds", sep="_")))    
+
 } else {
   jack.bind<- readRDS(
-    file.path(params$input.variability.rds.path,
-              paste(params$species, "jack.resid.cv.bind.nonzero.rds", sep="_"))) 
+    file.path(input.variability.path,
+              paste(params$species, "jack.resid.cv.bind.nonzero.rds", sep="_")))     
+
 }
 ```
 
@@ -248,40 +257,47 @@ plot_triangle_correlation_matrix(var.rank.corr.matrix.melt, title="Variability r
 
 # Save
 ```{r save-objects}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+if (!params$combat) {
+  output.path <- file.path(params$output.rds.path, "no_combat")
+} else {
+  output.path <- file.path(params$output.rds.path, "combat")
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 if (!params$all.nonzero.matrix) {
   saveRDS(expr.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "expr.corr.matrix.melt.rds", sep="_")))
   
   saveRDS(log2.cv.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "log2.cv.corr.matrix.melt.rds", sep="_")))
   
   saveRDS(resid.log2.cv.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "resid.log2.cv.corr.matrix.melt.rds", sep="_")))
 
   saveRDS(var.rank.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "var.rank.corr.matrix.melt.rds", sep="_")))
 
 } else {
   saveRDS(expr.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "expr.corr.matrix.melt.nonzero.rds", sep="_")))
   
   saveRDS(log2.cv.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "log2.cv.corr.matrix.melt.nonzero.rds", sep="_")))
   
   saveRDS(resid.log2.cv.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "resid.log2.cv.corr.matrix.melt.nonzero.rds", sep="_")))
 
   saveRDS(var.rank.corr.matrix.melt,
-          file.path(params$output.rds.path, 
+          file.path(output.path, 
                     paste(params$species, "var.rank.corr.matrix.melt.nonzero.rds", sep="_")))
+
 }
 ```
