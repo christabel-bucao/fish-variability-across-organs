@@ -13,6 +13,7 @@ params:
   ev.percentile: 0.20
   set.seed: 12345
   n.permutations: 2000
+  combat: FALSE
 ---
 
 # Setup {.tabset}
@@ -43,19 +44,32 @@ sessionInfo()
 
 ### Expression levels
 ```{r import-expression-levels}
+if (!params$combat) {
+  input.samples.path <- file.path(params$input.samples.rds.path, "no_combat")
+} else {
+  input.samples.path <- file.path(params$input.samples.rds.path, "combat")
+}
+
 # Load saved data from 01_Filter_Samples.Rmd
 # Normalized within-condition
 filtered.samples <- readRDS(
-  file.path(params$input.samples.rds.path,
-            paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+  file.path(input.samples.path,
+            paste(params$species, "4_reps_data.conditions.rds", sep="_")))  
 ```
 
 ### Expression variability
 ```{r import-variability}
+if (!params$combat) {
+  input.variability.path <- file.path(params$input.variability.rds.path, "no_combat")
+} else {
+  input.variability.path <- file.path(params$input.variability.rds.path, "combat")
+}
+
 # Load processed expression variability estimates from 03_Variability_Plots.Rmd
 jack.summary <- readRDS(
-  file.path(params$input.variability.rds.path,
+  file.path(input.variability.path,
             paste(params$species, "jack.resid.cv.summary.rds", sep="_")))
+
 ```
 
 ### Selectome
@@ -439,57 +453,64 @@ print(paste("p =", perm.pvalue[["MV"]]))
 
 # Save
 ```{r save-objects}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+if (!params$combat) {
+  output.path <- file.path(params$output.rds.path, "no_combat")
+} else {
+  output.path <- file.path(params$output.rds.path, "combat")
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 # Variability rank categories
 saveRDS(ev.tally,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "ev.tally.rds", sep="_")))
 
 saveRDS(ev.tally.sort,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "ev.tally.sort.rds", sep="_")))
 
 # Filtered Selectome results
 saveRDS(selectome.sub,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "selectome.sub.rds", sep="_")))
 
 ## Background gene set
 saveRDS(selectome.bgd,
-        file.path(params$output.rds.path,
+        file.path(output.path,
                   paste(params$species, "selectome.bgd.rds", sep="_")))
 
 ### Background gene set with median variability across conditions
 saveRDS(selectome.bgd.groupby.gene.ev.median,
-        file.path(params$output.rds.path,
+        file.path(output.path,
                   paste(params$species, "selectome.bgd.groupby.gene.ev.median.rds", sep="_")))
 
 ## Subset by variability rank categories
 saveRDS(selectome.sub.bind,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "selectome.sub.bind.rds", sep="_")))
 
 # Positive selection
 saveRDS(selectome.enrichment,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "selectome.enrichment.rds", sep="_")))
 
 saveRDS(selectome.chisq.test,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "selectome.chisq.test.rds", sep="_")))
 
 # Permutation test
-saveRDS(selectome.perm.sub,
-        file.path(params$output.rds.path, 
+saveRDS(selectome.perm.sub, 
+        file.path(output.path, 
                   paste(params$species, "selectome.perm.sub.rds", sep="_")))
 
 saveRDS(selectome.perm.enrichment,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "selectome.perm.enrichment.rds", sep="_")))
 
 saveRDS(perm.pvalue,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "perm.pvalue.rds", sep="_")))
+        file.path(output.path, 
+                  paste(params$species, "perm.pvalue.rds", sep="_")))  
+
 ```
 
