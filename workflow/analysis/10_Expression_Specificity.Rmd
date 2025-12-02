@@ -10,6 +10,7 @@ params:
   tau.cutoff: 0.30
   all.nonzero.matrix: FALSE
   randomize.mean.expr: FALSE
+  combat: FALSE
   set.seed: 12345
 ---
 
@@ -42,6 +43,12 @@ sessionInfo()
 
 ## Data
 ```{r import-filtered-samples}
+if (!params$combat) {
+  input.path <- file.path(params$input.rds.path, "no_combat")
+} else {
+  input.path <- file.path(params$input.rds.path, "combat")
+}
+
 # Load saved data from 01_Filter_Samples.Rmd
 # Normalized across conditions
 # Minimum replicates
@@ -51,18 +58,24 @@ filtered.samples <- list()
 
 if (!params$all.nonzero.matrix) {
   filtered.samples$LOC <- readRDS(
-    file.path(params$input.rds.path, "LOC_2_reps_data.qc2.cor.rds"))
+    file.path(input.path, "LOC_2_reps_data.qc2.cor.rds"))
+    
   filtered.samples$ELU <- readRDS(
-    file.path(params$input.rds.path, "ELU_1_reps_data.qc2.cor.rds"))
+    file.path(input.path, "ELU_1_reps_data.qc2.cor.rds"))
+    
   filtered.samples$DRE <- readRDS(
-    file.path(params$input.rds.path, "DRE_1_reps_data.qc2.cor.rds"))
+    file.path(input.path, "DRE_1_reps_data.qc2.cor.rds"))    
+
 } else {
   filtered.samples$LOC <- readRDS(
-    file.path(params$input.rds.path, "LOC_2_reps_data.qc2.cor.nonzero.rds"))
+    file.path(input.path, "LOC_2_reps_data.qc2.cor.nonzero.rds"))
+    
   filtered.samples$ELU <- readRDS(
-    file.path(params$input.rds.path, "ELU_1_reps_data.qc2.cor.nonzero.rds"))
+    file.path(input.path, "ELU_1_reps_data.qc2.cor.nonzero.rds"))
+  
   filtered.samples$DRE <- readRDS(
-    file.path(params$input.rds.path, "DRE_1_reps_data.qc2.cor.nonzero.rds"))
+    file.path(input.path, "DRE_1_reps_data.qc2.cor.nonzero.rds"))    
+
 }
 ```
 
@@ -357,7 +370,14 @@ for (sp in species) {
 
 # Save
 ```{r save-objects}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+if (!params$combat) {
+  output.path <- file.path(params$output.rds.path, "no_combat")
+} else {
+  output.path <- file.path(params$output.rds.path, "combat")
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
+
 
 # Separate per species
 if (!params$all.nonzero.matrix) {
@@ -365,13 +385,13 @@ if (!params$all.nonzero.matrix) {
   if (!params$randomize.mean.expr) {
     for (sp in species) {
       saveRDS(filtered.samples.exc.skin[[sp]],
-              file.path(params$output.rds.path, 
+              file.path(output.path, 
                         paste(sp, "filtered.samples.exc.skin.rds", sep="_")))    
     }    
   } else {
     for (sp in species) {
       saveRDS(filtered.samples.exc.skin[[sp]],
-              file.path(params$output.rds.path,
+              file.path(output.path,
                         paste(sp, "filtered.samples.exc.skin", paste0("rnd",params$set.seed, ".rds"), sep="_")))
     }
   }
@@ -381,13 +401,13 @@ if (!params$all.nonzero.matrix) {
   if (!params$randomize.mean.expr) {
     for (sp in species) {
       saveRDS(filtered.samples.common[[sp]],
-              file.path(params$output.rds.path, 
+              file.path(output.path, 
                         paste(sp, "filtered.samples.common.rds", sep="_")))    
     }    
   } else {
     for (sp in species) {
       saveRDS(filtered.samples.exc.skin[[sp]],
-              file.path(params$output.rds.path,
+              file.path(output.path,
                         paste(sp, "filtered.samples.common", paste0("rnd",params$set.seed, ".rds"), sep="_")))
     }    
   }
@@ -397,13 +417,13 @@ if (!params$all.nonzero.matrix) {
   if (!params$randomize.mean.expr) {
     for (sp in species) {
       saveRDS(filtered.samples.exc.skin[[sp]],
-              file.path(params$output.rds.path, 
+              file.path(output.path, 
                         paste(sp, "filtered.samples.exc.skin.nonzero.rds", sep="_")))    
     }     
   } else {
     for (sp in species) {
       saveRDS(filtered.samples.exc.skin[[sp]],
-              file.path(params$output.rds.path,
+              file.path(output.path,
                         paste(sp, "filtered.samples.exc.skin.nonzero", paste0("rnd",params$set.seed, ".rds"), sep="_")))
     }    
   }
@@ -413,13 +433,13 @@ if (!params$all.nonzero.matrix) {
   if (!params$randomize.mean.expr) {
     for (sp in species) {
       saveRDS(filtered.samples.common[[sp]],
-              file.path(params$output.rds.path, 
+              file.path(output.path, 
                         paste(sp, "filtered.samples.common.nonzero.rds", sep="_")))    
     }    
   } else {
     for (sp in species) {
       saveRDS(filtered.samples.exc.skin[[sp]],
-              file.path(params$output.rds.path,
+              file.path(output.path,
                         paste(sp, "filtered.samples.common.nonzero", paste0("rnd",params$set.seed, ".rds"), sep="_")))
     }      
   }
