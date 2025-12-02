@@ -19,6 +19,7 @@ params:
   min.percentile: 0.00
   max.percentile: 0.95
   win.size: 100
+  combat: FALSE
 ---
 
 # Setup {.tabset}
@@ -63,24 +64,37 @@ biotype <-
 
 ### Expression levels
 ```{r import-expression-levels}
+if (!params$combat) {
+  input.samples.path <- file.path(params$input.samples.rds.path, "no_combat")
+} else {
+  input.samples.path <- file.path(params$input.samples.rds.path, "combat")
+}
+
 # Load saved data from 01_Filter_Samples.Rmd
 ## Normalized separately per condition
 samples.norm.within <- readRDS(
-  file.path(params$input.samples.rds.path,
+  file.path(input.samples.path,
             paste(params$species, "4_reps_data.conditions.rds", sep="_")))
 
 ## Normalized across conditions
 samples.norm.across <- readRDS(
-  file.path(params$input.samples.rds.path,
-            paste(params$species, "4_reps_data.qc2.cor.rds", sep="_")))
+  file.path(input.samples.path,
+            paste(params$species, "4_reps_data.qc2.cor.rds", sep="_")))  
+
 ```
 
 ### Expression variability
 ```{r import-variability}
+if (!params$combat) {
+  input.variability.path <- file.path(params$input.variability.rds.path, "no_combat")
+} else {
+  input.variability.path <- file.path(params$input.variability.rds.path, "combat")
+}
+
 # Load processed expression variability estimates from 03_Variability_Plots.Rmd
 jack.bind <- readRDS(
-  file.path(params$input.variability.rds.path,
-            paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
+  file.path(input.variability.path,
+            paste(params$species, "jack.resid.cv.bind.rds", sep="_")))  
 ```
 
 # Main {.tabset}
@@ -322,37 +336,44 @@ boxplot_bimodality_by_variability_comparison(
 
 # Save
 ```{r save-objects}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+if (!params$combat) {
+  output.path <- file.path(params$output.rds.path, "no_combat")
+} else {
+  output.path <- file.path(params$output.rds.path, "combat")
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 # Observed
 saveRDS(zscore.matrix.tissue1,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "zscore.matrix.tissue1.rds", sep="_")))
 
 saveRDS(bimodality.test.tissue1,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "bimodality.test.tissue1.rds", sep="_")))
 
 # Simulated
 saveRDS(jack.tissue1.2,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "jack.tissue1.2.rds", sep="_")))
 
 saveRDS(expr.matrix.tissue1.2,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "expr.matrix.tissue1.2.rds", sep="_")))
 
 saveRDS(zscore.matrix.tissue1.2,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "zscore.matrix.tissue1.2.rds", sep="_")))
 
 saveRDS(bimodality.test.tissue1.2,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "bimodality.test.tissue1.2.rds", sep="_")))
 
 # Combined
 saveRDS(bimodality.test.combined,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "bimodality.test.combined.rds", sep="_")))
+        file.path(output.path, 
+                  paste(params$species, "bimodality.test.combined.rds", sep="_")))  
+
 ```
 
