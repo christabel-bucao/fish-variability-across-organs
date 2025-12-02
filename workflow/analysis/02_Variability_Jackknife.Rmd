@@ -12,6 +12,7 @@ params:
   max.percentile: 0.95
   win.size: 100
   all.nonzero.matrix: FALSE
+  combat: FALSE
   run.example: FALSE
   ex.tissue: "brain"
   ex.sex: "F"
@@ -42,16 +43,24 @@ sessionInfo()
 
 ## Data
 ```{r import-filtered-samples}
+if (!params$combat) {
+  input.path <- file.path(params$input.rds.path, "no_combat")
+} else {
+  input.path <- file.path(params$input.rds.path, "combat")
+}
+
 # Load saved data from 01_Filter_Samples.Rmd
 # Normalized by condition
 if (!params$all.nonzero.matrix) {
-  filtered.samples <- readRDS(
-    file.path(params$input.rds.path,
-              paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+    filtered.samples <- readRDS(
+      file.path(input.path,
+                paste(params$species, "4_reps_data.conditions.rds", sep="_")))    
+
 } else {
-  filtered.samples <- readRDS(
-    file.path(params$input.rds.path,
-              paste(params$species, "4_reps_data.conditions.nonzero.rds", sep="_")))  
+    filtered.samples <- readRDS(
+      file.path(input.path,
+                paste(params$species, "4_reps_data.conditions.nonzero.rds", sep="_")))    
+
 }
 
 Tissue <- as.factor(filtered.samples$metadata$Tissue)
@@ -178,33 +187,42 @@ if ("Sex" %in% colnames(filtered.samples$metadata)) {
 }
 ```
 
+
 # Save
 ```{r save-objects}
-if (!dir.exists(params$output.rds.path)) { dir.create(params$output.rds.path, showWarnings=FALSE) }
+if (!params$combat) {
+  output.path <- file.path(params$output.rds.path, "no_combat")
+} else {
+  output.path <- file.path(params$output.rds.path, "combat")
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 if (!params$all.nonzero.matrix) { 
-  saveRDS(jack.adj.sd,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "jack.adj.sd.rds", sep="_")))
+    saveRDS(jack.adj.sd,
+            file.path(output.path, 
+                      paste(params$species, "jack.adj.sd.rds", sep="_")))
   
-  saveRDS(jack.resid.sd,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "jack.resid.sd.rds", sep="_")))
+    saveRDS(jack.resid.sd,
+            file.path(output.path, 
+                      paste(params$species, "jack.resid.sd.rds", sep="_")))
+    
+    saveRDS(jack.resid.cv,
+            file.path(output.path, 
+                      paste(params$species, "jack.resid.cv.rds", sep="_")))    
   
-  saveRDS(jack.resid.cv,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "jack.resid.cv.rds", sep="_")))
 } else {
-  saveRDS(jack.adj.sd,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "jack.adj.sd.nonzero.rds", sep="_")))
+    saveRDS(jack.adj.sd,
+            file.path(output.path, 
+                      paste(params$species, "jack.adj.sd.nonzero.rds", sep="_")))
   
-  saveRDS(jack.resid.sd,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "jack.resid.sd.nonzero.rds", sep="_")))
-  
-  saveRDS(jack.resid.cv,
-        file.path(params$output.rds.path, 
-                  paste(params$species, "jack.resid.cv.nonzero.rds", sep="_")))  
+    saveRDS(jack.resid.sd,
+            file.path(output.path, 
+                      paste(params$species, "jack.resid.sd.nonzero.rds", sep="_")))
+    
+    saveRDS(jack.resid.cv,
+            file.path(output.path, 
+                      paste(params$species, "jack.resid.cv.nonzero.rds", sep="_")))      
+
 }
 ```
