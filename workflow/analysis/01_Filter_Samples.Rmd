@@ -327,6 +327,172 @@ data.qc1.seq.combat$cor.matrix <- cor(data.qc1.seq.combat$log2.tmm.cpm.gf, metho
 plot_correlation_heatmap(data.qc1.seq.combat$cor.matrix, data.qc1.seq.combat$metadata, clust=TRUE)
 ```
 
+
+### Normalization per condition
+
+#### No batch correction
+```{r normalize-per-condition-qc1, eval=params$normalize.by.condition}
+data.qc1.conditions <- vector(mode="list", length=6)
+names(data.qc1.conditions) <- 
+  c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
+
+data.qc1.conditions$conditions <- data.qc1.seq$conditions
+data.qc1.conditions$metadata <- data.qc1.seq$metadata
+
+Tissue <- as.factor(data.qc1.seq$metadata$Tissue)
+
+if ("Sex" %in% colnames(data.qc1.seq$metadata)) {
+  Sex <- as.factor(data.qc1.seq$metadata$Sex)
+  
+  data.qc1.conditions$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        subset_expr_matrix(data.qc1.seq$counts, tissue=t, sex=s)
+      })
+    })
+
+  data.qc1.conditions$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        filter_genes_by_cpm(data.qc1.conditions$counts[[t]][[s]], 
+                            min.cpm=params$min.cpm, tmm=FALSE)
+      })
+    })
+  
+  data.qc1.conditions$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.qc1.conditions$counts.gf[[t]][[s]],
+          data.qc1.conditions$metadata[data.qc1.conditions$metadata$Tissue==t &
+                                  data.qc1.conditions$metadata$Sex==s,],
+          log2=FALSE)
+      })
+    })
+    
+  data.qc1.conditions$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.qc1.conditions$counts.gf[[t]][[s]],
+          data.qc1.conditions$metadata[data.qc1.conditions$metadata$Tissue==t &
+                                  data.qc1.conditions$metadata$Sex==s,],
+          log2=TRUE, shift.min=TRUE)
+      })
+    })
+  
+} else {
+  data.qc1.conditions$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      subset_expr_matrix(data.qc1.seq$counts, tissue=t)
+    })
+ 
+  data.qc1.conditions$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      filter_genes_by_cpm(data.qc1.conditions$counts[[t]], 
+                          min.cpm=params$min.cpm, tmm=FALSE)
+    })
+  
+  data.qc1.conditions$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.qc1.conditions$counts.gf[[t]],
+          data.qc1.conditions$metadata[data.qc1.conditions$metadata$Tissue==t,],
+          log2=FALSE)
+    })
+  
+  data.qc1.conditions$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.qc1.conditions$counts.gf[[t]],
+          data.qc1.conditions$metadata[data.qc1.conditions$metadata$Tissue==t,],
+          log2=TRUE, shift.min=TRUE)
+    })
+}
+```
+
+#### With batch correction
+```{r normalize-per-condition-qc1-combat}
+data.qc1.conditions.combat <- vector(mode="list", length=6)
+names(data.qc1.conditions.combat) <- 
+  c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
+
+data.qc1.conditions.combat$conditions <- data.qc1.seq.combat$conditions
+data.qc1.conditions.combat$metadata <- data.qc1.seq.combat$metadata
+
+Tissue <- as.factor(data.qc1.seq.combat$metadata$Tissue)
+
+if ("Sex" %in% colnames(data.qc1.seq.combat$metadata)) {
+  Sex <- as.factor(data.qc1.seq.combat$metadata$Sex)
+  
+  data.qc1.conditions.combat$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        subset_expr_matrix(data.qc1.seq.combat$counts, tissue=t, sex=s)
+      })
+    })
+
+  data.qc1.conditions.combat$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        filter_genes_by_cpm(data.qc1.conditions.combat$counts[[t]][[s]], 
+                            min.cpm=params$min.cpm, tmm=FALSE)
+      })
+    })
+  
+  data.qc1.conditions.combat$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.qc1.conditions.combat$counts.gf[[t]][[s]],
+          data.qc1.conditions.combat$metadata[data.qc1.conditions.combat$metadata$Tissue==t &
+                                  data.qc1.conditions.combat$metadata$Sex==s,],
+          log2=FALSE)
+      })
+    })
+    
+  data.qc1.conditions.combat$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        transform_counts_to_tmm_cpm(
+          data.qc1.conditions.combat$counts.gf[[t]][[s]],
+          data.qc1.conditions.combat$metadata[data.qc1.conditions.combat$metadata$Tissue==t &
+                                  data.qc1.conditions.combat$metadata$Sex==s,],
+          log2=TRUE, shift.min=TRUE)
+      })
+    })
+  
+} else {
+  data.qc1.conditions.combat$counts <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      subset_expr_matrix(data.qc1.seq.combat$counts, tissue=t)
+    })
+ 
+  data.qc1.conditions.combat$counts.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      filter_genes_by_cpm(data.qc1.conditions.combat$counts[[t]], 
+                          min.cpm=params$min.cpm, tmm=FALSE)
+    })
+  
+  data.qc1.conditions.combat$tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.qc1.conditions.combat$counts.gf[[t]],
+          data.qc1.conditions.combat$metadata[data.qc1.conditions.combat$metadata$Tissue==t,],
+          log2=FALSE)
+    })
+  
+  data.qc1.conditions.combat$log2.tmm.cpm.gf <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      transform_counts_to_tmm_cpm(
+        data.qc1.conditions.combat$counts.gf[[t]],
+          data.qc1.conditions.combat$metadata[data.qc1.conditions.combat$metadata$Tissue==t,],
+          log2=TRUE, shift.min=TRUE)
+    })
+}
+```
+
+
 ## Filter 2: Within-tissue correlation
 
 ### Iterative removal of low correlation samples
@@ -427,11 +593,11 @@ boxplot_detected_genes(data.qc2.cor.combat$metadata)
 ```
 
 
-## Gene biotype
+### Gene biotype
 
 Split genes by biotype
 
-### No batch correction
+#### No batch correction
 ```{r split-by-gene-biotype}
 data.qc2.cor$coding$log2.tmm.cpm.gf <-
   data.qc2.cor$log2.tmm.cpm.gf[
@@ -453,7 +619,7 @@ nrow(data.qc2.cor$log2.tmm.cpm.gf) -
   (nrow(data.qc2.cor$coding$log2.tmm.cpm.gf) + nrow(data.qc2.cor$lncrna$log2.tmm.cpm.gf))
 ```
 
-### With batch correction
+#### With batch correction
 ```{r}
 data.qc2.cor.combat$coding$log2.tmm.cpm.gf <-
   data.qc2.cor.combat$log2.tmm.cpm.gf[
@@ -476,21 +642,21 @@ nrow(data.qc2.cor.combat$log2.tmm.cpm.gf) -
 ```
 
 
-### Protein-coding
+#### Protein-coding
 
-#### Plot - PCA {.tabset}
+##### Plot - PCA {.tabset}
 ```{r plot-pca-protein-coding, fig.align='center'}
 data.qc2.cor$coding$pca <- run_pca(data.qc2.cor$coding$log2.tmm.cpm.gf)
 data.qc2.cor.combat$coding$pca <- run_pca(data.qc2.cor.combat$coding$log2.tmm.cpm.gf)
 ```
 
-##### By batch
+###### By batch
 ```{r plot-pca-protein-coding-batch, fig.align='center'}
 plot_pca_by_batch(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
 plot_pca_by_batch(data.qc2.cor.combat$coding$pca, data.qc2.cor.combat$metadata)
 ```
 
-##### By condition
+###### By condition
 ```{r plot-pca-protein-coding-condition, fig.align='center'}
 plot_pca_by_condition(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
 plot_pca_by_condition(data.qc2.cor.combat$coding$pca, data.qc2.cor.combat$metadata)
@@ -499,7 +665,7 @@ plot_pca_by_condition_pc34(data.qc2.cor$coding$pca, data.qc2.cor$metadata)
 plot_pca_by_condition_pc34(data.qc2.cor.combat$coding$pca, data.qc2.cor.combat$metadata)
 ```
 
-#### Plot - Correlation heatmap
+##### Plot - Correlation heatmap
 ```{r plot-heatmap-protein-coding, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc2.cor$coding$cor.matrix <- 
   cor(data.qc2.cor$coding$log2.tmm.cpm.gf, method="pearson")
@@ -512,21 +678,21 @@ plot_correlation_heatmap(data.qc2.cor.combat$coding$cor.matrix,
                          data.qc2.cor.combat$metadata, clust=TRUE)
 ```
 
-### lncRNA
+#### lncRNA
 
-#### Plot - PCA {.tabset}
+##### Plot - PCA {.tabset}
 ```{r plot-pca-lncrna, fig.align='center'}
 data.qc2.cor$lncrna$pca <- run_pca(data.qc2.cor$lncrna$log2.tmm.cpm.gf)
 data.qc2.cor.combat$lncrna$pca <- run_pca(data.qc2.cor.combat$lncrna$log2.tmm.cpm.gf)
 ```
 
-##### By batch
+###### By batch
 ```{r plot-pca-lncrna-batch, fig.align='center'}
 plot_pca_by_batch(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
 plot_pca_by_batch(data.qc2.cor.combat$lncrna$pca, data.qc2.cor.combat$metadata)
 ```
 
-##### By condition
+###### By condition
 ```{r plot-pca-lncrna-condition, fig.align='center'}
 plot_pca_by_condition(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
 plot_pca_by_condition(data.qc2.cor.combat$lncrna$pca, data.qc2.cor.combat$metadata)
@@ -535,7 +701,7 @@ plot_pca_by_condition_pc34(data.qc2.cor$lncrna$pca, data.qc2.cor$metadata)
 plot_pca_by_condition_pc34(data.qc2.cor.combat$lncrna$pca, data.qc2.cor.combat$metadata)
 ```
 
-#### Plot - Correlation heatmap
+##### Plot - Correlation heatmap
 ```{r plot-heatmap-lncrna, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc2.cor$lncrna$cor.matrix <- 
   cor(data.qc2.cor$lncrna$log2.tmm.cpm.gf, method="pearson")
@@ -548,9 +714,9 @@ plot_correlation_heatmap(data.qc2.cor.combat$lncrna$cor.matrix,
                          data.qc2.cor.combat$metadata, clust=TRUE)
 ```
 
-## Reduced (all nonzero) expression matrix
+### Reduced (all nonzero) expression matrix
 
-### No batch correction
+#### No batch correction
 ```{r keep-all-nonzero-counts-only}
 data.qc2.cor.nonzero <- data.qc2.cor[c("conditions","metadata","counts")]
 
@@ -568,7 +734,7 @@ data.qc2.cor.nonzero$log2.tmm.cpm.gf <-
                               log2=TRUE, shift.min=FALSE)
 ```
 
-### With batch correction
+#### With batch correction
 ```{r keep-all-nonzero-counts-only-combat}
 data.qc2.cor.nonzero.combat <- data.qc2.cor.combat[c("conditions","metadata","counts")]
 
@@ -586,19 +752,19 @@ data.qc2.cor.nonzero.combat$log2.tmm.cpm.gf <-
                               log2=TRUE, shift.min=FALSE)
 ```
 
-### Plot - PCA {.tabset}
+#### Plot - PCA {.tabset}
 ```{r plot-pca-correlation-filter-nonzero, fig.align='center'}
 data.qc2.cor.nonzero$pca <- run_pca(data.qc2.cor.nonzero$log2.tmm.cpm.gf)
 data.qc2.cor.nonzero.combat$pca <- run_pca(data.qc2.cor.nonzero.combat$log2.tmm.cpm.gf)
 ```
 
-#### By batch
+##### By batch
 ```{r plot-pca-correlation-filter-nonzero-batch, fig.align='center'}
 plot_pca_by_batch(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
 plot_pca_by_batch(data.qc2.cor.nonzero.combat$pca, data.qc2.cor.nonzero.combat$metadata)
 ```
 
-#### By condition
+##### By condition
 ```{r plot-pca-correlation-filter-nonzero-condition, fig.align='center'}
 plot_pca_by_condition(data.qc2.cor.nonzero$pca, data.qc2.cor.nonzero$metadata)
 plot_pca_by_condition(data.qc2.cor.nonzero.combat$pca, data.qc2.cor.nonzero.combat$metadata)
@@ -608,7 +774,7 @@ plot_pca_by_condition_pc34(data.qc2.cor.nonzero.combat$pca, data.qc2.cor.nonzero
 ```
 
 
-### Plot - Correlation heatmap
+#### Plot - Correlation heatmap
 ```{r plot-heatmap-correlation-filter-nonzero, fig.align='center', fig.width = 12, fig.height = 8}
 data.qc2.cor.nonzero$cor.matrix <- cor(data.qc2.cor.nonzero$log2.tmm.cpm.gf, method="pearson")
 plot_correlation_heatmap(data.qc2.cor.nonzero$cor.matrix, data.qc2.cor.nonzero$metadata, clust=TRUE)
@@ -618,10 +784,10 @@ plot_correlation_heatmap(data.qc2.cor.nonzero.combat$cor.matrix, data.qc2.cor.no
 ```
 
 
-## Normalization per condition
+### Normalization per condition
 
-### No batch correction
-```{r normalize-per-condition, eval=params$normalize.by.condition}
+#### No batch correction
+```{r normalize-per-condition-qc2, eval=params$normalize.by.condition}
 data.conditions <- vector(mode="list", length=6)
 names(data.conditions) <- 
   c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
@@ -701,8 +867,8 @@ if ("Sex" %in% colnames(data.qc2.cor$metadata)) {
 }
 ```
 
-### With batch correction
-```{r normalize-per-condition-combat}
+#### With batch correction
+```{r normalize-per-condition-qc2-combat}
 data.conditions.combat <- vector(mode="list", length=6)
 names(data.conditions.combat) <- 
   c("conditions","metadata","counts","counts.gf","tmm.cpm.gf","log2.tmm.cpm.gf")
@@ -783,9 +949,9 @@ if ("Sex" %in% colnames(data.qc2.cor.combat$metadata)) {
 ```
 
 
-### Reduced (all nonzero) expression matrix
+#### Reduced (all nonzero) expression matrix
 
-#### No batch correction
+##### No batch correction
 ```{r normalize-per-condition-nonzero, eval=params$normalize.by.condition}
 data.conditions.nonzero <- vector(mode="list", length=6)
 names(data.conditions.nonzero) <- 
@@ -866,7 +1032,7 @@ if ("Sex" %in% colnames(data.qc2.cor.nonzero$metadata)) {
 }
 ```
 
-### With batch correction
+#### With batch correction
 ```{r normalize-per-condition-nonzero-combat}
 data.conditions.nonzero.combat <- vector(mode="list", length=6)
 names(data.conditions.nonzero.combat) <- 
@@ -953,33 +1119,62 @@ if ("Sex" %in% colnames(data.qc2.cor.nonzero.combat$metadata)) {
 # Normalized across all conditions
 
 ## No ComBat
-no_combat_dir <- file.path(params$output.rds.path,"no_combat")
-if (!dir.exists(no_combat_dir)) { dir.create(no_combat_dir, recursive=TRUE, showWarnings=FALSE) }
+#output.path <- file.path(params$output.rds.path,"no_combat")
+#if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
+
+### Filtered by sequencing quality only
+output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
+
+saveRDS(data.qc1.seq, 
+        file.path(output.path, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc1.seq.rds", sep="_")))
+
+### Filtered by sequencing quality & within-tissue correlation
+output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 saveRDS(data.qc2.cor, 
-        file.path(no_combat_dir, 
+        file.path(output.path, 
                   paste(params$species, 
                         params$min.replicates, "reps",
                         "data.qc2.cor.rds", sep="_")))
 
 saveRDS(data.qc2.cor.nonzero, 
-        file.path(no_combat_dir, 
+        file.path(output.path, 
                   paste(params$species, 
                         params$min.replicates, "reps",
                         "data.qc2.cor.nonzero.rds", sep="_")))
 
+
 ## With ComBat
-combat_dir <- file.path(params$output.rds.path, "combat")
-if (!dir.exists(combat_dir)) { dir.create(combat_dir, recursive=TRUE, showWarnings=FALSE) }
+#combat.path <- file.path(params$output.rds.path, "combat")
+#if (!dir.exists(combat.path)) { dir.create(combat.path, recursive=TRUE, showWarnings=FALSE) }
+
+### Filtered by sequencing quality only
+output.path <- file.path(params$output.rds.path, "combat", "qc1_only")
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
+
+saveRDS(data.qc1.seq.combat, 
+        file.path(output.path, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc1.seq.rds", sep="_")))
+
+### Filtered by sequencing quality & within-tissue correlation
+output.path <- file.path(params$output.rds.path, "combat", "full_qc")
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 saveRDS(data.qc2.cor.combat, 
-        file.path(combat_dir, 
+        file.path(output.path, 
                   paste(params$species, 
                         params$min.replicates, "reps",
                         "data.qc2.cor.rds", sep="_")))
 
 saveRDS(data.qc2.cor.nonzero.combat, 
-        file.path(combat_dir, 
+        file.path(output.path, 
                   paste(params$species, 
                         params$min.replicates, "reps",
                         "data.qc2.cor.nonzero.rds", sep="_")))
@@ -988,28 +1183,53 @@ saveRDS(data.qc2.cor.nonzero.combat,
 
 ```{r save-objects-2, eval=params$normalize.by.condition}
 # Normalized per condition
+
 ## No ComBat
+### Filtered by sequencing quality only
+output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")
+
+saveRDS(data.qc1.conditions, 
+        file.path(output.path, 
+                  paste(params$species, 
+                        params$min.replicates, "reps",
+                        "data.qc1.conditions.rds", sep="_")))
+
+### Filtered by sequencing quality & within-tissue correlation
+output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")
+
 saveRDS(data.conditions, 
-        file.path(no_combat_dir, 
+        file.path(output.path, 
                   paste(params$species,
                         params$min.replicates, "reps",
                         "data.conditions.rds", sep="_")))
 
 saveRDS(data.conditions.nonzero, 
-        file.path(no_combat_dir, 
+        file.path(output.path, 
                   paste(params$species,
                         params$min.replicates, "reps",
                         "data.conditions.nonzero.rds", sep="_")))
 
 ## With ComBat
+### Filtered by sequencing quality only
+output.path <- file.path(params$output.rds.path, "combat", "qc1_only")
+
+saveRDS(data.qc1.conditions.combat, 
+        file.path(output.path, 
+                  paste(params$species,
+                        params$min.replicates, "reps",
+                        "data.qc1.conditions.rds", sep="_")))
+
+### Filtered by sequencing quality & within-tissue correlation
+output.path <- file.path(params$output.rds.path, "combat", "full_qc")
+
 saveRDS(data.conditions.combat, 
-        file.path(combat_dir, 
+        file.path(output.path, 
                   paste(params$species,
                         params$min.replicates, "reps",
                         "data.conditions.rds", sep="_")))
 
 saveRDS(data.conditions.nonzero.combat, 
-        file.path(combat_dir, 
+        file.path(output.path, 
                   paste(params$species,
                         params$min.replicates, "reps",
                         "data.conditions.nonzero.rds", sep="_")))
