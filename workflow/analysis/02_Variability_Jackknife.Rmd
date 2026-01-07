@@ -11,6 +11,7 @@ params:
   min.percentile: 0.00
   max.percentile: 0.95
   win.size: 100
+  qc1.only: FALSE
   all.nonzero.matrix: FALSE
   combat: FALSE
   run.example: FALSE
@@ -44,17 +45,34 @@ sessionInfo()
 ## Data
 ```{r import-filtered-samples}
 if (!params$combat) {
-  input.path <- file.path(params$input.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "no_combat", "full_qc")
+  } else {
+    input.path <- file.path(params$input.rds.path, "no_combat", "qc1_only")    
+  }
+  
 } else {
-  input.path <- file.path(params$input.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.rds.path, "combat", "qc1_only")    
+  }
+
 }
 
 # Load saved data from 01_Filter_Samples.Rmd
 # Normalized by condition
 if (!params$all.nonzero.matrix) {
+  if (!params$qc1.only) {
     filtered.samples <- readRDS(
       file.path(input.path,
-                paste(params$species, "4_reps_data.conditions.rds", sep="_")))    
+                paste(params$species, "4_reps_data.conditions.rds", sep="_")))        
+  } else {
+    filtered.samples <- readRDS(
+      file.path(input.path,
+                paste(params$species, "4_reps_data.qc1.conditions.rds", sep="_")))            
+  } 
+
 
 } else {
     filtered.samples <- readRDS(
@@ -191,9 +209,18 @@ if ("Sex" %in% colnames(filtered.samples$metadata)) {
 # Save
 ```{r save-objects}
 if (!params$combat) {
-  output.path <- file.path(params$output.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "no_combat/full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "no_combat/qc1_only")
+  }
+  
 } else {
-  output.path <- file.path(params$output.rds.path, "combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "combat/full_qc")
+  } else {
+    output.path <- file.path(params$output.rds.path, "combat/qc1_only")    
+  }
 }
 
 if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
