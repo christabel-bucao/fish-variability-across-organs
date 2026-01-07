@@ -76,23 +76,24 @@ if (!dir.exists(step02.variability.jackknife$output.dir)) {
 
 # List parameters
 step02.variability.jackknife$params <- list(
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=TRUE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=TRUE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE)
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE)
 )
+# If qc1.only=FALSE, we use samples that have been filtered by both (1) sequencing quality and  (2) within-sample correlation
 # If all.nonzero.matrix=TRUE, we consider only the set of genes with nonzero counts across all samples
 # The last one is for an example computation without jackknife resampling
 
@@ -102,9 +103,9 @@ for (p in (1:length(step02.variability.jackknife$params))) {
   print(paste("Run jackknife?:", !step02.variability.jackknife$params[[p]]$run.example))
   
   if (step02.variability.jackknife$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step02.variability.jackknife$output.dir, "no_combat")
+    output.dir <- file.path(step02.variability.jackknife$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step02.variability.jackknife$output.dir, "combat")
+    output.dir <- file.path(step02.variability.jackknife$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -165,18 +166,18 @@ if (!dir.exists(step03.variability.plots$output.dir)) {
 
 # List parameters
 step03.variability.plots$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=FALSE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=FALSE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=FALSE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=TRUE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=TRUE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=TRUE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=FALSE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=FALSE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=FALSE, combat=TRUE),
-  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=TRUE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=TRUE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, all.nonzero.matrix=TRUE, combat=TRUE)
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE)
 )
 
 ##### Run analysis script #####
@@ -184,9 +185,9 @@ for (p in (1:length(step03.variability.plots$params))) {
   print(paste("Species:", step03.variability.plots$params[[p]]$species))
   
   if (step03.variability.plots$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step03.variability.plots$output.dir, "no_combat")
+    output.dir <- file.path(step03.variability.plots$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step03.variability.plots$output.dir, "combat")
+    output.dir <- file.path(step03.variability.plots$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -231,18 +232,18 @@ if (!dir.exists(step04.correlation.conditions$output.dir)) {
 
 # List parameters
 step04.correlation.conditions$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], all.nonzero.matrix=FALSE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], all.nonzero.matrix=FALSE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], all.nonzero.matrix=FALSE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], all.nonzero.matrix=TRUE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], all.nonzero.matrix=TRUE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], all.nonzero.matrix=TRUE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], all.nonzero.matrix=FALSE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], all.nonzero.matrix=FALSE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], all.nonzero.matrix=FALSE, combat=TRUE),
-  list(species="LOC", species.name=species.name[["LOC"]], all.nonzero.matrix=TRUE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], all.nonzero.matrix=TRUE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], all.nonzero.matrix=TRUE, combat=TRUE)
+  list(species="LOC", species.name=species.name[["LOC"]], qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE)
 )
 
 ##### Run analysis script #####
@@ -250,9 +251,9 @@ for (p in (1:length(step04.correlation.conditions$params))) {
   print(paste("Species:", step04.correlation.conditions$params[[p]]$species))
   
   if (step04.correlation.conditions$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step04.correlation.conditions$output.dir, "no_combat")
+    output.dir <- file.path(step04.correlation.conditions$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step04.correlation.conditions$output.dir, "combat")
+    output.dir <- file.path(step04.correlation.conditions$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -295,12 +296,12 @@ if (!dir.exists(step05.bimodality.test$output.dir)) {
 
 # List parameters
 step05.bimodality.test$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], min.replicates=10, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.replicates=10, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.replicates=10, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], min.replicates=10, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], min.replicates=10, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], min.replicates=10, combat=TRUE)
+  list(species="LOC", species.name=species.name[["LOC"]], min.replicates=10, qc1.only=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.replicates=10, qc1.only=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.replicates=10, qc1.only=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], min.replicates=10, qc1.only=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.replicates=10, qc1.only=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.replicates=10, qc1.only=FALSE, combat=TRUE)
 )
 
 ##### Run analysis script #####
@@ -308,9 +309,9 @@ for (p in (1:length(step05.bimodality.test$params))) {
   print(paste("Species:", step05.bimodality.test$params[[p]]$species))
   
   if (step05.bimodality.test$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step05.bimodality.test$output.dir, "no_combat")
+    output.dir <- file.path(step05.bimodality.test$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step05.bimodality.test$output.dir, "combat")
+    output.dir <- file.path(step05.bimodality.test$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -354,9 +355,9 @@ for (p in (1:length(step06.simulated.bimodality$params))) {
   print(paste("Species:", step06.simulated.bimodality$params[[p]]$species))
   
   if (step06.simulated.bimodality$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step06.simulated.bimodality$output.dir, "no_combat")
+    output.dir <- file.path(step06.simulated.bimodality$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step06.simulated.bimodality$output.dir, "combat")
+    output.dir <- file.path(step06.simulated.bimodality$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -389,8 +390,8 @@ if (!dir.exists(step07.go.enrichment$output.dir)) {
 
 # List parameters
 step07.go.enrichment$params <- list(
-  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, pvalue.cutoff=0.01, condition.cutoff=3, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, pvalue.cutoff=0.01, condition.cutoff=3, combat=TRUE)
+  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, pvalue.cutoff=0.01, condition.cutoff=3, qc1.only=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, pvalue.cutoff=0.01, condition.cutoff=3, qc1.only=FALSE, combat=TRUE)
 )
 
 ##### Run analysis script #####
@@ -398,9 +399,9 @@ for (p in (1:length(step07.go.enrichment$params))) {
   print(paste("Species:", step07.go.enrichment$params[[p]]$species))
   
   if (step07.go.enrichment$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step07.go.enrichment$output.dir, "no_combat")
+    output.dir <- file.path(step07.go.enrichment$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step07.go.enrichment$output.dir, "combat")
+    output.dir <- file.path(step07.go.enrichment$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -435,12 +436,12 @@ if (!dir.exists(step08.selection$output.dir)) {
 
 # List parameters
 step08.selection$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, combat=TRUE)
+  list(species="LOC", species.name=species.name[["LOC"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, qc1.only=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, qc1.only=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, qc1.only=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, qc1.only=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, qc1.only=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], ev.percentile=0.20, set.seed=12345, n.permutations=2000, qc1.only=FALSE, combat=TRUE)
 )
 
 ##### Run analysis script #####
@@ -448,9 +449,9 @@ for (p in (1:length(step08.selection$params))) {
   print(paste("Species:", step08.selection$params[[p]]$species))
   
   if (step08.selection$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step08.selection$output.dir, "no_combat")
+    output.dir <- file.path(step08.selection$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step08.selection$output.dir, "combat")
+    output.dir <- file.path(step08.selection$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -508,31 +509,31 @@ if (!dir.exists(step10.expression.specificity$output.dir)) {
 
 # List parameters
 step10.expression.specificity$params <- list(
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=FALSE),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=TRUE),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=TRUE),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=TRUE),
-  list(min.cpm=1.0, tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=TRUE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=TRUE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=TRUE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=TRUE),
-  list(min.cpm=1.0, tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=TRUE)
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=FALSE),
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=TRUE),
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=TRUE),
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=TRUE),
+  list(min.cpm=1.0, tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=TRUE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=FALSE, combat=TRUE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomize.mean.expr=FALSE, combat=TRUE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=12345, combat=TRUE),
+  list(min.cpm=1.0, tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomize.mean.expr=TRUE, set.seed=67890, combat=TRUE)
 )
 
 ##### Run analysis script #####
 for (p in (1:length(step10.expression.specificity$params))) {
   
   if (step10.expression.specificity$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step10.expression.specificity$output.dir, "no_combat")
+    output.dir <- file.path(step10.expression.specificity$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step10.expression.specificity$output.dir, "combat")
+    output.dir <- file.path(step10.expression.specificity$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -602,18 +603,18 @@ if (!dir.exists(step11.selection.organ.bias$output.dir)) {
 
 # List parameters
 step11.selection.organ.bias$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, combat=TRUE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, combat=TRUE)
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, combat=TRUE)
 )
 
 ##### Run analysis script #####
@@ -621,9 +622,9 @@ for (p in (1:length(step11.selection.organ.bias$params))) {
   print(paste("Species:", step11.selection.organ.bias$params[[p]]$species))
   
   if (step11.selection.organ.bias$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step11.selection.organ.bias$output.dir, "no_combat")
+    output.dir <- file.path(step11.selection.organ.bias$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step11.selection.organ.bias$output.dir, "combat")
+    output.dir <- file.path(step11.selection.organ.bias$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -657,54 +658,54 @@ if (!dir.exists(step12.organ.bias$output.dir)) {
 
 # List parameters
 step12.organ.bias$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890)  
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890)  
 )
 
 ##### Run analysis script #####
@@ -712,9 +713,9 @@ for (p in (1:length(step12.organ.bias$params))) {
   print(paste("Species:", step12.organ.bias$params[[p]]$species))
   
   if (step12.organ.bias$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step12.organ.bias$output.dir, "no_combat")
+    output.dir <- file.path(step12.organ.bias$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step12.organ.bias$output.dir, "combat")
+    output.dir <- file.path(step12.organ.bias$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -784,31 +785,31 @@ if (!dir.exists(step13.organ.bias.combined$output.dir)) {
 
 # List parameters
 step13.organ.bias.combined$params <- list(
-  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
-  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
-  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
-  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(tau.cutoff=0.30, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(tau.cutoff=0.30, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
-  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(tau.cutoff=0.50, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
-  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
-  list(tau.cutoff=0.50, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890)
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=12345),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=FALSE, seed.run=67890),
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=TRUE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=12345),
+  list(tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=TRUE, combat=TRUE, seed.run=67890)
 )
 
 ##### Run analysis script #####
 for (p in (1:length(step13.organ.bias.combined$params))) {
   
   if (step13.organ.bias.combined$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step13.organ.bias.combined$output.dir, "no_combat")
+    output.dir <- file.path(step13.organ.bias.combined$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step13.organ.bias.combined$output.dir, "combat")
+    output.dir <- file.path(step13.organ.bias.combined$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
@@ -878,18 +879,18 @@ if (!dir.exists(step14.organ.bias.observed.vs.random$output.dir)) {
 
 # List parameters
 step14.organ.bias.observed.vs.random$params <- list(
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, combat=FALSE, seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, combat=TRUE, seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
-  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
-  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22) 
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, combat=FALSE, seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, combat=FALSE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, combat=TRUE, seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=16, plot.width=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, combat=TRUE,  seed.run1=12345, seed.run2=67890, plot.height=18, plot.width=22) 
 )
 
 ##### Run analysis script #####
@@ -897,9 +898,9 @@ for (p in (1:length(step14.organ.bias.observed.vs.random$params))) {
   print(paste("Species:", step14.organ.bias.observed.vs.random$params[[p]]$species))
   
   if (step14.organ.bias.observed.vs.random$params[[p]]$combat==FALSE) {
-    output.dir <- file.path(step14.organ.bias.observed.vs.random$output.dir, "no_combat")
+    output.dir <- file.path(step14.organ.bias.observed.vs.random$output.dir, "no_combat", "full_qc")
   } else {
-    output.dir <- file.path(step14.organ.bias.observed.vs.random$output.dir, "combat")
+    output.dir <- file.path(step14.organ.bias.observed.vs.random$output.dir, "combat", "full_qc")
   }
   
   if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
