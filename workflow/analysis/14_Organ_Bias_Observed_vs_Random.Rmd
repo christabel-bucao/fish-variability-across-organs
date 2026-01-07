@@ -9,6 +9,7 @@ params:
   species: "DRE"
   species.name: "Danio rerio"
   tau.cutoff: 0.30
+  qc1.only: FALSE
   combat: FALSE
   seed.run1: 12345
   seed.run2: 67890
@@ -41,9 +42,19 @@ source("../functions/organ_bias_plots.R")
 ### Multiple pairwise comparisons
 ```{r import-pairwise-comparisons}
 if (!params$combat) {
-  input.path <- file.path(params$input.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.path <- file.path(params$input.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.rds.path, "combat", "qc1_only")    
+  }
+
 }
 
 # Load results of multiple pairwise comparisons from 12_Organ_Bias.Rmd
@@ -239,9 +250,19 @@ heatmap_effect_size_combined_comparisons(
 # Save
 ```{r save-objects}
 if (!params$combat) {
-  output.path <- file.path(params$output.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  output.path <- file.path(params$output.rds.path, "combat")
+  if (!params$qc1.only) {
+  output.path <- file.path(params$output.rds.path, "combat", "full_qc")    
+  } else {
+  output.path <- file.path(params$output.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
