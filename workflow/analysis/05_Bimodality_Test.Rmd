@@ -10,6 +10,7 @@ params:
   species: "DRE"
   species.name: "Danio rerio"
   min.replicates: 10
+  qc1.only: FALSE
   combat: FALSE
 ---
 
@@ -54,24 +55,51 @@ sessionInfo()
 ### Expression levels
 ```{r import-expression-levels}
 if (!params$combat) {
-  input.samples.path <- file.path(params$input.samples.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.samples.path <- file.path(params$input.samples.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.samples.path <- file.path(params$input.samples.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.samples.path <- file.path(params$input.samples.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.samples.path <- file.path(params$input.samples.rds.path, "combat", "full_qc")    
+  } else {
+    input.samples.path <- file.path(params$input.samples.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 # Load saved data from 01_Filter_Samples.Rmd
 # Normalized within-condition
-filtered.samples <- readRDS(
-  file.path(input.samples.path,
-            paste(params$species, "4_reps_data.conditions.rds", sep="_")))  
+if (!params$qc1.only) {
+  filtered.samples <- readRDS(
+    file.path(input.samples.path,
+              paste(params$species, "4_reps_data.conditions.rds", sep="_")))    
+} else {
+  filtered.samples <- readRDS(
+    file.path(input.samples.path,
+              paste(params$species, "4_reps_data.qc1.conditions.rds", sep="_")))      
+}
+
 ```
 
 ### Expression variability
 ```{r import-variability}
 if (!params$combat) {
-  input.variability.path <- file.path(params$input.variability.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.variability.path <- file.path(params$input.variability.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.rds.path, "combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.rds.path, "combat", "qc1_only")            
+  }
+
 }
 
 # Load processed expression variability estimates from 03_Variability_Plots.Rmd
@@ -227,31 +255,41 @@ if ("gonads" %in% filtered.samples.retained$condtions$Tissue) {
 # Save
 ```{r save-objects}
 if (!params$combat) {
-  output.path <- file.path(params$output.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  output.path <- file.path(params$output.rds.path, "combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
 
 saveRDS(filtered.samples.retained,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "filtered.samples.retained.rds", sep="_")))
 
 saveRDS(jack.condition.retained,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "jack.condition.retained.rds", sep="_")))
 
 saveRDS(zscore.matrix,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "zscore.matrix.rds", sep="_")))
 
 saveRDS(bimodality.test,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "bimodality.test.rds", sep="_")))
 
 saveRDS(bimodality.test.bind,
-        file.path(params$output.rds.path, 
+        file.path(output.path, 
                   paste(params$species, "bimodality.test.bind.rds", sep="_")))  
 
 ```
