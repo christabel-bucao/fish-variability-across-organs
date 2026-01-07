@@ -10,6 +10,7 @@ params:
   species: "DRE"
   species.name: "Danio rerio"
   tau.cutoff: 0.30
+  qc1.only: FALSE
   combat: FALSE
 ---
 
@@ -38,9 +39,19 @@ source("../functions/selection_plots.R")
 ### Filtered selection data
 ```{r import-filtered-selection-data}
 if (!params$combat) {
-  input.selection.path <- file.path(params$input.selection.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.selection.path <- file.path(params$input.selection.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.selection.path <- file.path(params$input.selection.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.selection.path <- file.path(params$input.selection.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.selection.path <- file.path(params$input.selection.rds.path, "combat", "full_qc")    
+  } else {
+    input.selection.path <- file.path(params$input.selection.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 # Load saved data from 08_Selection.Rmd
@@ -60,9 +71,16 @@ selectome.bgd.groupby.gene.ev.median <- readRDS(
 ### Expression specificity (tau)
 ```{r import-tau}
 if (!params$combat) {
-  input.tau.path <- file.path(params$input.tau.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.tau.path <- file.path(params$input.tau.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.tau.path <- file.path(params$input.tau.rds.path, "no_combat", "qc1_only")        
+  }
 } else {
-  input.tau.path <- file.path(params$input.tau.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.tau.path <- file.path(params$input.tau.rds.path, "combat", "full_qc")    
+  }
+    input.tau.path <- file.path(params$input.tau.rds.path, "combat", "qc1_only")    
 }
 
 # Load expression specificity computations from 10_Expression_Specificity.Rmd
@@ -178,9 +196,18 @@ try(boxplot_omega0_varbins(selection.tau.tissue.groupby.gene.biased, compare.ext
 # Save
 ```{r save-objects}
 if (!params$combat) {
-  output.path <- file.path(params$output.rds.path, "no_combat")
+  if (!params$qc1.only) {
+      output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")
+  } else {
+      output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")    
+  }
 } else {
-  output.path <- file.path(params$output.rds.path, "combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
