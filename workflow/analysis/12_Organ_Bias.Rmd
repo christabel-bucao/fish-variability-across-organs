@@ -12,6 +12,7 @@ params:
   tau.cutoff: 0.30
   all.nonzero.matrix: FALSE
   randomized.mean.expr: FALSE
+  qc1.only: FALSE
   combat: TRUE
   seed.run: 12345
 ---
@@ -47,9 +48,19 @@ sessionInfo()
 ### Organ expression specificity (tau)
 ```{r import-tau}
 if (!params$combat) {
-  input.tau.path <- file.path(params$input.tau.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.tau.path <- file.path(params$input.tau.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.tau.path <- file.path(params$input.tau.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.tau.path <- file.path(params$input.tau.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.tau.path <- file.path(params$input.tau.rds.path, "combat", "full_qc")    
+  } else {
+    input.tau.path <- file.path(params$input.tau.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 # Load expression specificity computations from 10_Expression_Specificity.Rmd
@@ -89,9 +100,19 @@ expr.rank.first <- filtered.samples$expr.rank.first
 ### Expression variability
 ```{r import-variability}
 if (!params$combat) {
-  input.variability.path <- file.path(params$input.variability.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.variability.path <- file.path(params$input.variability.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.rds.path, "combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 # Load processed expression variability estimates from 03_Variability_Plots.Rmd
@@ -688,9 +709,19 @@ heatmap_effect_size_pairwise_comparisons(
 ## Observed
 ```{r save-objects-1, eval=!params$randomized.mean.expr}
 if (!params$combat) {
-  output.path <- file.path(params$output.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  output.path <- file.path(params$output.rds.path, "combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
@@ -794,9 +825,19 @@ if (!params$all.nonzero.matrix) {
 ## Randomized mean expression
 ```{r save-objects-2, eval=params$randomized.mean.expr}
 if (!params$combat) {
-  output.path <- file.path(params$output.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  output.path <- file.path(params$output.rds.path, "combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "combat", "qc1_only")
+  }
+
 }
 
 if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }

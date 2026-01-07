@@ -413,7 +413,7 @@ heatmap_effect_size_pairwise_comparisons_blue2red <- function(wilcox.df, species
   }else if (value=="variability") {
     title <- "Variability ranks"      
   }
-  
+    
   custom_theme <- theme(plot.title=element_text(size=20),
                         plot.subtitle=element_text(size=18, face="italic"),
                         axis.title=element_text(size=18),
@@ -530,10 +530,35 @@ heatmap_effect_size_combined_comparisons_blue2red <- function(wilcox.df, cross.s
     title <- "Variability ranks"      
   }
   
+  custom_theme <- theme(plot.title=element_text(size=24),
+                        axis.title=element_text(size=20),
+                        axis.text=element_text(size=20),
+                        strip.text=element_text(size=20),
+                        legend.title=element_text(size=20),
+                        legend.text=element_text(size=20, angle=30),
+                        panel.grid.major=element_blank(),
+                        panel.spacing.x=unit(1.1,"lines"),
+                        panel.spacing.y=unit(1.1,"lines"),
+                        legend.position="bottom") 
+  
+  #custom_theme <- theme(plot.title=element_text(size=24),
+  #                      axis.title=element_text(size=18),
+  #                      axis.text=element_text(size=14),
+  #                      strip.text=element_text(size=18),
+  #                      legend.title=element_text(size=18),
+  #                      legend.text=element_text(size=12, angle=30),
+  #                      panel.grid.major=element_blank(),
+  #                      panel.spacing.x=unit(1.1,"lines"),
+  #                      panel.spacing.y=unit(1.1,"lines"),
+  #                      legend.position="bottom") 
+  
+  x_labels <- limma::strsplit2(levels(as.factor(wilcox.df$Bias)), split=" ")[,1]
+  
   if (cross.species==TRUE) {
     ggplot(wilcox.df, 
            aes(x=Bias, y=Tissue, fill=GlassDelta)) + 
       geom_tile() +
+      scale_x_discrete(labels = x_labels) +
       scale_fill_gradient2(midpoint = 0, low="#00BFC4", mid="white", high="#F8766D", na.value="gray") +
       geom_text(data=subset(wilcox.df[wilcox.df$p.adj < adj.p,], p.signif!="ns"),
                 size=6, aes(label=p.signif)) +
@@ -543,16 +568,8 @@ heatmap_effect_size_combined_comparisons_blue2red <- function(wilcox.df, cross.s
            y="Focal organ",
            fill="Effect size") +
       theme_bw() +
-      theme(plot.title=element_text(size=24),
-            axis.title=element_text(size=18),
-            axis.text=element_text(size=14),
-            strip.text=element_text(size=18),
-            legend.title=element_text(size=18),
-            legend.text=element_text(size=12, angle=30),
-            panel.grid.major=element_blank(),
-            panel.spacing.x=unit(1.1,"lines"),
-            panel.spacing.y=unit(1.1,"lines"),
-            legend.position="bottom")     
+      custom_theme
+    
   } else {
     if ("Sex" %in% colnames(wilcox.df)) {
       facet.vars <- vars(Run, Sex)
@@ -561,6 +578,7 @@ heatmap_effect_size_combined_comparisons_blue2red <- function(wilcox.df, cross.s
     ggplot(wilcox.df, 
            aes(x=Bias, y=Tissue, fill=GlassDelta)) + 
       geom_tile() +
+      scale_x_discrete(labels = x_labels) +
       scale_fill_gradient2(midpoint = 0, low="#00BFC4", mid="white", high="#F8766D", na.value="gray") +
       geom_text(data=subset(wilcox.df[wilcox.df$p.adj < adj.p,], p.signif!="ns"),
                 size=6, aes(label=p.signif)) +
@@ -571,17 +589,8 @@ heatmap_effect_size_combined_comparisons_blue2red <- function(wilcox.df, cross.s
            y="Focal organ",
            fill="Effect size") +
       theme_bw() +
-      theme(plot.title=element_text(size=24),
-            plot.subtitle=element_text(size=18, face="italic"),
-            axis.title=element_text(size=18),
-            axis.text=element_text(size=14),
-            strip.text=element_text(size=18),
-            legend.title=element_text(size=18),
-            legend.text=element_text(size=12, angle=30),
-            panel.grid.major=element_blank(),
-            panel.spacing.x=unit(1.1,"lines"),
-            panel.spacing.y=unit(1.1,"lines"),
-            legend.position="bottom")     
+      custom_theme
+      
   }
 
 }
