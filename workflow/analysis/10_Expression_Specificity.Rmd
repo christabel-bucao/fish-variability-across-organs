@@ -8,6 +8,7 @@ params:
   output.rds.path: "../../results/10_Expression_Specificity"
   min.cpm: 1.0
   tau.cutoff: 0.30
+  qc1.only: FALSE
   all.nonzero.matrix: FALSE
   randomize.mean.expr: FALSE
   combat: FALSE
@@ -41,12 +42,22 @@ source("../functions/helper_functions.R")
 sessionInfo()
 ```
 
-## Data
+## [Edit] Data
 ```{r import-filtered-samples}
 if (!params$combat) {
-  input.path <- file.path(params$input.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.path <- file.path(params$input.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.rds.path, "combat", "qc1_only")            
+  }
+
 }
 
 # Load saved data from 01_Filter_Samples.Rmd
@@ -56,27 +67,39 @@ species <- c("LOC","ELU","DRE")
 
 filtered.samples <- list()
 
-if (!params$all.nonzero.matrix) {
-  filtered.samples$LOC <- readRDS(
-    file.path(input.path, "LOC_2_reps_data.qc2.cor.rds"))
+if (!params$qc1.only) {
+  if (!params$all.nonzero.matrix) {
+    filtered.samples$LOC <- readRDS(
+      file.path(input.path, "LOC_2_reps_data.qc2.cor.rds"))
     
-  filtered.samples$ELU <- readRDS(
-    file.path(input.path, "ELU_1_reps_data.qc2.cor.rds"))
+    filtered.samples$ELU <- readRDS(
+      file.path(input.path, "ELU_1_reps_data.qc2.cor.rds"))
     
-  filtered.samples$DRE <- readRDS(
-    file.path(input.path, "DRE_1_reps_data.qc2.cor.rds"))    
+    filtered.samples$DRE <- readRDS(
+      file.path(input.path, "DRE_1_reps_data.qc2.cor.rds"))    
 
 } else {
-  filtered.samples$LOC <- readRDS(
-    file.path(input.path, "LOC_2_reps_data.qc2.cor.nonzero.rds"))
+    filtered.samples$LOC <- readRDS(
+      file.path(input.path, "LOC_2_reps_data.qc2.cor.nonzero.rds"))
     
-  filtered.samples$ELU <- readRDS(
-    file.path(input.path, "ELU_1_reps_data.qc2.cor.nonzero.rds"))
+    filtered.samples$ELU <- readRDS(
+      file.path(input.path, "ELU_1_reps_data.qc2.cor.nonzero.rds"))
   
-  filtered.samples$DRE <- readRDS(
-    file.path(input.path, "DRE_1_reps_data.qc2.cor.nonzero.rds"))    
+    filtered.samples$DRE <- readRDS(
+      file.path(input.path, "DRE_1_reps_data.qc2.cor.nonzero.rds"))    
 
+  }  
+} else {
+    filtered.samples$LOC <- readRDS(
+      file.path(input.path, "LOC_2_reps_data.qc1.seq.rds"))
+    
+    filtered.samples$ELU <- readRDS(
+      file.path(input.path, "ELU_1_reps_data.qc1.seq.rds"))
+    
+    filtered.samples$DRE <- readRDS(
+      file.path(input.path, "DRE_1_reps_data.qc1.seq.rds"))      
 }
+
 ```
 
 # Main {.tabset}
@@ -371,9 +394,19 @@ for (sp in species) {
 # Save
 ```{r save-objects}
 if (!params$combat) {
-  output.path <- file.path(params$output.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "no_combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  output.path <- file.path(params$output.rds.path, "combat")
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
