@@ -62,7 +62,7 @@ rm(list=setdiff(ls(), ls()[grepl("step[0-9]*|species.name",ls())]))
 gc()
 
 
-#### Step 2: Estimate gene expression variability ####
+#### Step 2: Estimate gene expression variability - with jackknife ####
 
 ##### Set input and parameters #####
 step02.variability.jackknife <- list()
@@ -142,6 +142,95 @@ for (p in (1:length(step02.variability.jackknife$params))) {
           output_file=file.path(
             "..", output.dir,
             paste(step02.variability.jackknife$params[[p]]$species, "nonzero.html", sep="_")))
+    }       
+  }
+}
+
+# Clear workspace
+keep <- ls()[grepl("step[0-9]*|species.name",ls())]
+rm(list=setdiff(ls(), keep))
+gc()
+
+
+#### Step 2b: Estimate gene expression variability - without jackknife ####
+
+##### Set input and parameters #####
+step02b.variability.nojack <- list()
+step02b.variability.nojack$input <- "analysis/02b_Variability_NoJack.Rmd"
+step02b.variability.nojack$output.dir <- "../results/02b_Variability_NoJack"
+
+# Create results directory
+if (!dir.exists(step02b.variability.nojack$output.dir)) {
+  dir.create(step02b.variability.nojack$output.dir, recursive=TRUE, showWarnings=FALSE)
+}
+
+# List parameters
+step02b.variability.nojack$params <- list(
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=TRUE, ex.tissue="brain", ex.sex="F"),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=FALSE, all.nonzero.matrix=TRUE, combat=TRUE, run.example=FALSE)
+)
+# If qc1.only=FALSE, we use samples that have been filtered by both (1) sequencing quality and  (2) within-sample correlation
+# If all.nonzero.matrix=TRUE, we consider only the set of genes with nonzero counts across all samples
+# The last one is for an example computation without jackknife resampling
+
+##### Run analysis script #####
+for (p in (1:length(step02b.variability.nojack$params))) {
+  print(paste("Species:", step02b.variability.nojack$params[[p]]$species))
+  
+  if (step02b.variability.nojack$params[[p]]$combat==FALSE) {
+    output.dir <- file.path(step02b.variability.nojack$output.dir, "no_combat", "full_qc")
+  } else {
+    output.dir <- file.path(step02b.variability.nojack$output.dir, "combat", "full_qc")
+  }
+  
+  if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
+  
+  if (step02b.variability.nojack$params[[p]]$all.nonzero.matrix==FALSE) {
+    if (step02b.variability.nojack$params[[p]]$run.example==TRUE) {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, "example.html", sep="_")))
+    } else {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, ".html", sep="")))
+    }       
+    
+  } else {
+    if (step02b.variability.nojack$params[[p]]$run.example==TRUE) {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, "nonzero", "example.html", sep="_")))
+    } else {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, "nonzero.html", sep="_")))
     }       
   }
 }

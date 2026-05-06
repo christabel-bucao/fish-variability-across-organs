@@ -8,7 +8,7 @@ names(species.name) <- c("LOC","ELU","DRE")
 
 #### Step 1: (Skipped) Filter samples ####
 
-#### Step 2: Estimate gene expression variability ####
+#### Step 2: Estimate gene expression variability - With jackknife ####
 
 ##### Set input and parameters #####
 step02.variability.jackknife <- list()
@@ -76,6 +76,83 @@ for (p in (1:length(step02.variability.jackknife$params))) {
         output_file=file.path(
           "..", output.dir,
           paste(step02.variability.jackknife$params[[p]]$species, "nonzero.html", sep="_")))
+    }       
+  }
+}
+
+# Clear workspace
+keep <- ls()[grepl("step[0-9]*|species.name",ls())]
+rm(list=setdiff(ls(), keep))
+gc()
+
+
+#### Step 2b: Estimate gene expression variability - Without jackknife ####
+
+##### Set input and parameters #####
+step02b.variability.nojack <- list()
+step02b.variability.nojack$input <- "analysis/02b_Variability_NoJack.Rmd"
+step02b.variability.nojack$output.dir <- "../results/02b_Variability_NoJack"
+
+# Create results directory
+if (!dir.exists(step02b.variability.nojack$output.dir)) {
+  dir.create(step02b.variability.nojack$output.dir, recursive=TRUE, showWarnings=FALSE)
+}
+
+# List parameters
+step02b.variability.nojack$params <- list(
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=TRUE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=TRUE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=TRUE, all.nonzero.matrix=FALSE, combat=FALSE, run.example=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=TRUE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=TRUE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], min.percentile=0.00, max.percentile=0.95, win.size=100, qc1.only=TRUE, all.nonzero.matrix=FALSE, combat=TRUE, run.example=FALSE)
+)
+# If qc1.only=TRUE, we use samples that have been filtered by (1) sequencing quality but not (2) within-sample correlation
+
+##### Run analysis script #####
+for (p in (1:length(step02b.variability.nojack$params))) {
+  print(paste("Species:", step02b.variability.nojack$params[[p]]$species))
+  
+  if (step02b.variability.nojack$params[[p]]$combat==FALSE) {
+    output.dir <- file.path(step02b.variability.nojack$output.dir, "no_combat", "qc1_only")
+  } else {
+    output.dir <- file.path(step02b.variability.nojack$output.dir, "combat", "qc1_only")
+  }
+  
+  if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
+  
+  if (step02b.variability.nojack$params[[p]]$all.nonzero.matrix==FALSE) {
+    if (step02b.variability.nojack$params[[p]]$run.example==TRUE) {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, "example.html", sep="_")))
+    } else {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, ".html", sep="")))
+    }       
+    
+  } else {
+    if (step02b.variability.nojack$params[[p]]$run.example==TRUE) {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, "nonzero", "example.html", sep="_")))
+    } else {
+      rmarkdown::render(
+        input=step02b.variability.nojack$input,
+        params=step02b.variability.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step02b.variability.nojack$params[[p]]$species, "nonzero.html", sep="_")))
     }       
   }
 }
@@ -291,6 +368,61 @@ for (p in (1:length(step07.go.enrichment$params))) {
     output_file=file.path(
       "..", output.dir,
       paste(step07.go.enrichment$params[[p]]$species, ".html", sep="")))
+  
+}
+# The output for this step is used to run GO-Figure! outside of R
+# see run_go_figure.sh
+
+# Clear workspace
+rm(list=setdiff(ls(), ls()[grepl("step[0-9]*|species.name",ls())]))
+gc()
+
+#### Step 7b: Run cameraPR to test for highly/lowly variable GO terms ####
+
+##### Set input and parameters #####
+step07b.go.camera <- list()
+step07b.go.camera$input <- "analysis/07b_GO_cameraPR.Rmd"
+step07b.go.camera$output.dir <- "../results/07b_GO_cameraPR"
+
+# Create results directory
+if (!dir.exists(step07b.go.camera$output.dir)) {
+  dir.create(step07b.go.camera$output.dir, recursive=TRUE, showWarnings=FALSE)
+}
+
+# List parameters
+step07b.go.camera$params <- list(
+  list(species="DRE", species.name=species.name[["DRE"]], combat=FALSE, qc1.only=FALSE, min.genes=20, max.genes=1000, condition.cutoff=3),
+  list(species="DRE", species.name=species.name[["DRE"]], combat=TRUE, qc1.only=FALSE, min.genes=20, max.genes=1000, condition.cutoff=3),
+  list(species="DRE", species.name=species.name[["DRE"]], combat=FALSE, qc1.only=TRUE, min.genes=20, max.genes=1000, condition.cutoff=3),   
+  list(species="DRE", species.name=species.name[["DRE"]], combat=TRUE, qc1.only=TRUE, min.genes=20, max.genes=1000, condition.cutoff=3)  
+)
+
+##### Run analysis script #####
+for (p in (1:length(step07b.go.camera$params))) {
+  print(step07b.go.camera$params[[p]])
+  
+  if (step07b.go.camera$params[[p]]$combat==FALSE) {
+    if (step07b.go.camera$params[[p]]$qc1.only==FALSE) {
+      output.dir <- file.path(step07b.go.camera$output.dir, "no_combat", "full_qc")
+    } else {
+      output.dir <- file.path(step07b.go.camera$output.dir, "no_combat", "qc1_only")      
+    }
+  } else {
+    if (step07b.go.camera$params[[p]]$qc1.only==FALSE) {
+      output.dir <- file.path(step07b.go.camera$output.dir, "combat", "full_qc")      
+    } else {
+      output.dir <- file.path(step07b.go.camera$output.dir, "combat", "qc1_only")      
+    }
+  }
+  
+  if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
+  
+  rmarkdown::render(
+    input=step07b.go.camera$input,
+    params=step07b.go.camera$params[[p]],
+    output_file=file.path(
+      "..", output.dir,
+      paste(step07b.go.camera$params[[p]]$species, ".html", sep="")))
   
 }
 # The output for this step is used to run GO-Figure! outside of R
@@ -582,6 +714,92 @@ rm(list=setdiff(ls(), keep))
 gc()
 
 
+#### Step 12b: Check variability (residual MAD) of organ-biased genes ####
+
+##### Set input and parameters #####
+step12b.organ.bias.nojack <- list()
+step12b.organ.bias.nojack$input <- "analysis/12b_Organ_Bias_NoJack.Rmd"
+step12b.organ.bias.nojack$output.dir <- "../results/12b_Organ_Bias_NoJack"
+
+# Create results directory
+if (!dir.exists(step12b.organ.bias.nojack$output.dir)) {
+  dir.create(step12b.organ.bias.nojack$output.dir, recursive=TRUE, showWarnings=FALSE)
+}
+
+# List parameters
+step12b.organ.bias.nojack$params <- list(
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=FALSE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=FALSE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, qc1.only=TRUE, all.nonzero.matrix=FALSE, randomized.mean.expr=FALSE, combat=TRUE)
+)
+
+##### Run analysis script #####
+for (p in (1:length(step12b.organ.bias.nojack$params))) {
+  print(unlist(step12b.organ.bias.nojack$params[[p]]))
+  
+  if (step12b.organ.bias.nojack$params[[p]]$combat==FALSE) {
+    if (step12b.organ.bias.nojack$params[[p]]$qc1.only==TRUE) {
+      output.dir <- file.path(step12b.organ.bias.nojack$output.dir, "no_combat", "qc1_only")      
+    } else {
+      output.dir <- file.path(step12b.organ.bias.nojack$output.dir, "no_combat", "full_qc")      
+    }
+  } else {
+    if (step12b.organ.bias.nojack$params[[p]]$qc1.only==TRUE) {
+      output.dir <- file.path(step12b.organ.bias.nojack$output.dir, "combat", "qc1_only")      
+    } else {
+      output.dir <- file.path(step12b.organ.bias.nojack$output.dir, "combat", "full_qc")
+    }
+  }
+  
+  if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
+  
+  if (step12b.organ.bias.nojack$params[[p]]$all.nonzero.matrix==FALSE) {
+    rmarkdown::render(
+      input=step12b.organ.bias.nojack$input,
+      params=step12b.organ.bias.nojack$params[[p]],
+      output_file=file.path(
+        "..", output.dir,
+        paste(step12b.organ.bias.nojack$params[[p]]$species,
+              paste0("tau", step12b.organ.bias.nojack$params[[p]]$tau.cutoff,".html"), sep="_")))
+    
+    } else {
+      rmarkdown::render(
+        input=step12b.organ.bias.nojack$input,
+        params=step12b.organ.bias.nojack$params[[p]],
+        output_file=file.path(
+          "..", output.dir,
+          paste(step12b.organ.bias.nojack$params[[p]]$species, "nonzero",
+                paste0("tau", step12b.organ.bias.nojack$params[[p]]$tau.cutoff,".html"), sep="_")))
+    }
+}
+
+# Clear workspace
+keep <- ls()[grepl("step[0-9]*|species.name",ls())]
+rm(list=setdiff(ls(), keep))
+gc()
+
+
 #### Step 13: Combine results from step 12 across species ####
 
 ##### Set input and parameters #####
@@ -666,6 +884,84 @@ gc()
 
 
 #### Step 14: (Skipped) Combine results from step 12 for observed and randomized data ####
+
+
+#### Step 15: Run WCGNA to check for expression covariation ####
+
+##### Set input and parameters #####
+step15.wgcna <- list()
+step15.wgcna$input <- "analysis/15_WGCNA.Rmd"
+step15.wgcna$output.dir <- "../results/15_WGCNA"
+
+# Create results directory
+if (!dir.exists(step15.wgcna$output.dir)) {
+  dir.create(step15.wgcna$output.dir, recursive=TRUE, showWarnings=FALSE)
+}
+
+# List parameters
+step15.wgcna$params <- list(
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=12345, power=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=12345, power=10),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=12345, power=10),
+  #list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=67890, power=10),
+  #list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=67890, power=10),
+  #list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=67890, power=10),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=12345, power=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=12345, power=10),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=12345, power=10),
+  #list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=67890, power=10),
+  #list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=67890, power=10),
+  #list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.30, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=67890, power=10),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=12345, power=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=12345, power=10),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=12345, power=10),
+  #list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=67890, power=10),
+  #list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=67890, power=10),
+  #list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=FALSE, set.seed=67890, power=10),
+  list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=12345, power=10),
+  list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=12345, power=10),
+  list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=12345, power=10)#,
+  #list(species="LOC", species.name=species.name[["LOC"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=67890, power=10),
+  #list(species="ELU", species.name=species.name[["ELU"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=67890, power=10),
+  #list(species="DRE", species.name=species.name[["DRE"]], tau.cutoff=0.50, min.replicates=10, qc1.only=FALSE, combat=TRUE, set.seed=67890, power=10)
+)
+
+
+##### Run analysis script #####
+for (p in (1:length(step15.wgcna$params))) {
+  print(unlist(step15.wgcna$params[[p]]))
+  
+  if (step15.wgcna$params[[p]]$combat==FALSE) {
+    if (step15.wgcna$params[[p]]$qc1.only==TRUE) {
+      output.dir <- file.path(step15.wgcna$output.dir, "no_combat", "qc1_only")      
+    } else {
+      output.dir <- file.path(step15.wgcna$output.dir, "no_combat", "full_qc")      
+    }
+  } else {
+    if (step15.wgcna$params[[p]]$qc1.only==TRUE) {
+      output.dir <- file.path(step15.wgcna$output.dir, "combat", "qc1_only")      
+    } else {
+      output.dir <- file.path(step15.wgcna$output.dir, "combat", "full_qc")
+    }
+  }
+  
+  if (!dir.exists(output.dir)) { dir.create(output.dir, recursive=TRUE, showWarnings=FALSE) }
+  
+  rmarkdown::render(
+    input=step15.wgcna$input,
+    params=step15.wgcna$params[[p]],
+    output_file=file.path(
+      "..", output.dir,
+      paste(step15.wgcna$params[[p]]$species,
+            paste0("tau", step15.wgcna$params[[p]]$tau.cutoff),
+            paste0("rnd", step15.wgcna$params[[p]]$set.seed,".html"), sep="_")))
+  
+}
+
+# Clear workspace
+keep <- ls()[grepl("step[0-9]*|species.name",ls())]
+rm(list=setdiff(ls(), keep))
+gc()
 
 
 #### Save all parameters ####
