@@ -1,0 +1,301 @@
+---
+title: "Gene Set Enrichment (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.samples.path: "../../results/01_Filter_Samples"
+  input.variability.path: "../../results/03_Variability_Plots"
+  output.path: "../../results/07b_GO_cameraPR"
+  species: "DRE"
+  species.name: "Danio rerio"
+  combat: FALSE
+  qc1.only: FALSE
+  min.genes: 20
+  max.genes: 1000
+  condition.cutoff: 3
+
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+library(org.Dr.eg.db)
+library(GO.db)
+library(limma)
+
+#renv::snapshot()
+```
+
+## Functions
+```{r source-functions}
+
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+
+## Data
+
+### Expression levels
+```{r import-expression-levels}
+# Load saved data from 01_Filter_Samples.Rmd
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.samples.path <- file.path(params$input.samples.path, "no_combat", "full_qc")
+    
+    ## Normalized separately per condition
+    filtered.samples <- readRDS(
+      file.path(input.samples.path,
+                paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+
+    ## Normalized across all conditions
+    filtered.samples.across <- readRDS(
+      file.path(input.samples.path,
+              paste(params$species, "4_reps_data.qc2.cor.rds", sep="_")))    
+  } else {
+    input.samples.path <- file.path(params$input.samples.path, "no_combat", "qc1_only")
+    
+    ## Normalized separately per condition
+    filtered.samples <- readRDS(
+      file.path(input.samples.path,
+                paste(params$species, "4_reps_data.qc1.conditions.rds", sep="_")))
+    
+    ## Normalized across all conditions
+    filtered.samples.across <- readRDS(
+      file.path(input.samples.path,
+                paste(params$species, "4_reps_data.qc1.seq.rds", sep="_")))
+    
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.samples.path <- file.path(params$input.samples.path, "combat", "full_qc")
+    
+    ## Normalized separately per condition
+    filtered.samples <- readRDS(
+      file.path(input.samples.path,
+                paste(params$species, "4_reps_data.conditions.rds", sep="_")))
+
+    ## Normalized across all conditions
+    filtered.samples.across <- readRDS(
+      file.path(input.samples.path,
+              paste(params$species, "4_reps_data.qc2.cor.rds", sep="_"))) 
+    
+  } else {
+    
+    input.samples.path <- file.path(params$input.samples.path, "combat", "qc1_only")
+    
+    ## Normalized separately per condition
+    filtered.samples <- readRDS(
+      file.path(input.samples.path,
+                paste(params$species, "4_reps_data.qc1.conditions.rds", sep="_")))
+    
+    ## Normalized across all conditions
+    filtered.samples.across <- readRDS(
+      file.path(input.samples.path,
+                paste(params$species, "4_reps_data.qc1.seq.rds", sep="_")))    
+  }
+}
+
+```
+
+
+### Expression variability
+```{r import-variability}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.path, "no_combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.path, "combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.path, "combat", "qc1_only")        
+  }
+
+}
+
+# Load processed expression variability estimates from 03_Variability_Plots.Rmd
+#jack.summary <- readRDS(
+#  file.path(input.variability.path,
+#            paste(params$species, "jack.resid.cv.summary.rds", sep="_")))
+
+jack.bind <- readRDS(
+  file.path(input.variability.path,
+            paste(params$species, "jack.resid.cv.bind.rds", sep="_")))
+
+```
+
+
+# Main {.tabset}
+
+## Retrieve genes per GO term
+```{r retrieve-genes-per-go}
+min.genes <- params$min.genes
+max.genes <- params$max.genes
+
+# Map GO terms to genes
+go.sets <- as.list(org.Dr.egGO2ALLEGS)
+go.sets.filt <- go.sets[lengths(go.sets)>=min.genes & lengths(go.sets)<=max.genes]
+
+go.sets.bind <- data.frame("GOID"=names(unlist(go.sets.filt)), "Entrez"=unlist(go.sets.filt))
+go.sets.bind$EvidenceCode <- limma::strsplit2(go.sets.bind$GOID, split="[.]")[,2]
+go.sets.bind$GOID <- limma::strsplit2(go.sets.bind$GOID, split="[.]")[,1]
+
+go2term <- AnnotationDbi::select(GO.db, 
+                                 keys=unique(go.sets.bind$GOID),
+                                 columns=c("GOID","TERM","ONTOLOGY"),
+                                 keytype="GOID")
+
+go.sets.bind <- go.sets.bind %>%
+  dplyr::left_join(go2term,by="GOID")
+```
+
+## Run cameraPR for GO terms sets with variability metric as statistic
+```{r run-camera}
+# Convert Ensembl to Entrez IDs for each gene list 
+keys <- keys(org.Dr.eg.db, keytype="ENSEMBL")
+entrez <- 
+  mapIds(org.Dr.eg.db, keys=keys, column="ENTREZID", keytype="ENSEMBL", multiVals="first")
+
+jack.bind$Entrez <- vapply(jack.bind$GeneID, FUN.VALUE=character(1), FUN=function(g) {
+  entrez[g]
+})
+
+# Run cameraPR
+Tissue <- as.factor(filtered.samples$metadata$Tissue)
+Sex <- as.factor(filtered.samples$metadata$Sex)
+
+camera.test <-
+  lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      print(paste(t,s))
+      
+      var.metric <- jack.bind %>%
+        dplyr::filter(Tissue==t & Sex==s) %>%
+        dplyr::filter(Entrez %in% go.sets.bind$Entrez) %>%
+        dplyr::pull(Mean_Local_Rank_Log2CV, Entrez)
+      
+      cameraPR(statistic=var.metric, index=go.sets.filt, use.ranks=TRUE) %>%
+        tibble::rownames_to_column(var="GOID") %>%
+        dplyr::left_join(go2term, by="GOID")
+    })
+  })
+```
+
+```{r table-camera-signif}
+# How many GO terms are significantly highly variable ("Up") or lowly variable ("Down")?
+for (t in levels(Tissue)) {
+  for (s in levels(Sex)) {
+    print(paste(t,s, "Up"))
+    print(table(camera.test[[t]][[s]]$Direction=="Up", camera.test[[t]][[s]]$FDR<0.05))
+    
+    print(paste(t,s, "Down"))
+    print(table(camera.test[[t]][[s]]$Direction=="Down", camera.test[[t]][[s]]$FDR<0.05))    
+  }
+}
+```
+
+
+## Significantly highly or lowly variable GO terms
+```{r retrieve-camera-signif}
+camera.signif <-
+  lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      lapply(c("Up"="Up", "Down"="Down"), function(d) {
+        camera.test[[t]][[s]] %>%
+          dplyr::filter(Direction==d) %>%
+          dplyr::filter(FDR<0.05)
+      })
+    })
+  })
+```
+
+
+## Aggregate results from multiple cameraPR tests
+```{r aggregate-camera-results}
+camera.bind <- list("Up"=NULL, "Down"=NULL)
+
+for (t in levels(Tissue)) {
+  for (s in levels(Sex)) {
+    for (d in c("Up","Down")) {
+      camera.bind[[d]] <- rbind(camera.bind[[d]], camera.signif[[t]][[s]][[d]])
+    }
+  }
+}
+
+for (d in c("Up","Down")) {
+  camera.bind[[d]] <- camera.bind[[d]] %>%
+    dplyr::group_by(GOID,Direction,TERM,ONTOLOGY) %>%
+    dplyr::summarise(MeanPvalue=mean(PValue),
+                     MeanFDR=mean(FDR),
+                     NConditions=n()) %>%
+    dplyr::ungroup()
+}
+```
+
+# Save {.tabset}
+
+## Expert GO results for external plotting
+```{r export-results}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.path, "no_combat", "full_qc")    
+  } else {
+    output.path <- file.path(params$output.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+  output.path <- file.path(params$output.path, "combat", "full_qc")    
+  } else {
+  output.path <- file.path(params$output.path, "combat", "qc1_only")        
+  }
+
+}
+
+terms.dir <- file.path(output.path, "terms")
+if (!dir.exists(terms.dir)) { dir.create(terms.dir, recursive=TRUE) }
+
+go.export <- lapply(c("Up"="Up","Down"="Down"), function(d) {
+  camera.bind[[d]] %>%
+    dplyr::filter(NConditions>=params$condition.cutoff) %>%
+    dplyr::select(GOID, MeanFDR, NConditions)
+})
+
+tmp_filepath <- file.path(terms.dir, paste0(paste(params$species,"up",sep="_"),".txt"))
+write.table(go.export[["Up"]],tmp_filepath, quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t")
+
+tmp_filepath <- file.path(terms.dir, paste0(paste(params$species,"down",sep="_"),".txt"))
+write.table(go.export[["Down"]],tmp_filepath, quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t")
+```
+
+## Save RDS
+```{r save-objects}
+saveRDS(camera.test,
+        file.path(output.path, 
+                  paste(params$species, "camera.test.rds", sep="_")))
+
+saveRDS(camera.signif,
+        file.path(output.path, 
+                  paste(params$species, "camera.signif.rds", sep="_")))
+
+saveRDS(camera.bind,
+        file.path(output.path, 
+                  paste(params$species, "camera.bind.rds", sep="_")))
+```
+
