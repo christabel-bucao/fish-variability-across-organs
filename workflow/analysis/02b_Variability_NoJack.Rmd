@@ -1,0 +1,571 @@
+---
+title: "Variability - No Jackknife (*`r params$species.name`*)"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  gene.metadata.path: "../../data/gene_metadata"  
+  input.rds.path: "../../results/01_Filter_Samples"
+  output.rds.path: "../../results/02b_Variability_NoJack"
+  species: "DRE"
+  species.name: "Danio rerio"
+  min.percentile: 0.00
+  max.percentile: 0.95
+  win.size: 100
+  qc1.only: FALSE
+  all.nonzero.matrix: FALSE
+  combat: FALSE
+  run.example: FALSE
+  ex.tissue: "brain"
+  ex.sex: "F"
+---
+
+# Setup {.tabset}
+
+## Parameters
+```{r print-params}
+print(params)
+```
+
+## Libraries
+```{r import-libraries}
+library(dplyr)
+library(parallel)
+```
+
+## Functions
+```{r source-functions}
+source("../functions/variability_jackknife.R")
+```
+
+## Session Info
+```{r print-session-info}
+sessionInfo()
+```
+
+
+## Data
+
+### Gene metadata
+```{r import-metadata}
+biotype <- 
+  read.delim(file.path(params$gene.metadata.path, 
+                       paste(params$species, "biotype_Ensembl_105.txt", sep="_")), 
+             sep="\t")
+```
+
+### Processed expression data
+```{r import-filtered-samples}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "no_combat", "full_qc")
+  } else {
+    input.path <- file.path(params$input.rds.path, "no_combat", "qc1_only")    
+  }
+  
+} else {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.rds.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.rds.path, "combat", "qc1_only")    
+  }
+
+}
+
+# Load saved data from 01_Filter_Samples.Rmd
+# Normalized by condition
+if (!params$all.nonzero.matrix) {
+  if (!params$qc1.only) {
+    filtered.samples <- readRDS(
+      file.path(input.path,
+                paste(params$species, "4_reps_data.conditions.rds", sep="_")))        
+  } else {
+    filtered.samples <- readRDS(
+      file.path(input.path,
+                paste(params$species, "4_reps_data.qc1.conditions.rds", sep="_")))            
+  } 
+
+
+} else {
+    filtered.samples <- readRDS(
+      file.path(input.path,
+                paste(params$species, "4_reps_data.conditions.nonzero.rds", sep="_")))    
+
+}
+
+Tissue <- as.factor(filtered.samples$metadata$Tissue)
+if ("Sex" %in% colnames(filtered.samples$metadata)) { 
+  Sex <- as.factor(filtered.samples$metadata$Sex) 
+}
+```
+
+# Main
+
+## Example: Compute variability metrics without jackknifing {.tabset}
+```{r run-example, eval=params$run.example}
+t <- params$ex.tissue
+s <- params$ex.sex
+
+# See variability_jackknife.R for descriptions of functions
+
+# Different variability metrics
+## Adjusted SD
+var.adj.sd <- adjusted_sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+### Variability percentile rank within a sliding window of length win.size
+var.adj.sd$rank.adj.sd <- 
+  compute_local_ev_rank(var.adj.sd$mean, var.adj.sd$log2.adj.sd, win.size=100)
+
+## Residual log2 (CV)^2
+var.resid.cv <- residual_log2cv(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+var.resid.cv$rank.resid.log2.cv <- 
+  compute_local_ev_rank(var.resid.cv$mean, var.resid.cv$resid.log2.cv, win.size=100)
+
+## Residual log2 SD
+var.resid.sd <- residual_log2sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+var.resid.sd$rank.resid.log2.sd <- 
+  compute_local_ev_rank(var.resid.sd$mean, var.resid.sd$resid.log2.sd, win.size=100)
+
+## Residual MAD
+var.resid.mad <- residual_mad(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+var.resid.mad$rank.resid.mad <-
+  compute_local_ev_rank(var.resid.mad$mean, var.resid.mad$resid.mad, win.size=100)
+```
+
+### Correlation between methods
+```{r compare-variability-metrics, eval=params$run.example}
+# Correlation between methods
+
+## Adjusted SD vs residual log2 (CV)^2
+cor.test(var.adj.sd$log2.adj.sd, var.resid.cv$resid.log2.cv)
+cor.test(var.adj.sd$rank.adj.sd, var.resid.cv$rank.resid.log2.cv)
+
+## Residual log2 (CV)^2 vs residual MAD
+cor.test(var.resid.cv$resid.log2.cv, var.resid.mad$resid.mad)
+cor.test(var.resid.cv$rank.resid.log2.cv, var.resid.mad$rank.resid.mad)
+
+## Residual log2 SD vs residual MAD
+cor.test(var.resid.sd$resid.log2.sd, var.resid.mad$resid.mad)
+cor.test(var.resid.sd$rank.resid.log2.sd, var.resid.mad$rank.resid.mad)
+```
+
+## Compute variability metrics without jackknifing
+
+### Adjusted SD
+```{r run-adj-sd}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  adj.sd <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL } 
+      else {
+        adjusted_sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+      }
+    })
+  })
+} else {
+  adj.sd <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    adjusted_sd(filtered.samples$log2.tmm.cpm.gf[[t]])
+  })
+}
+
+# Bind into data frame
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  adj.sd.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL }
+      else {
+        data.frame("Mean"=adj.sd[[t]][[s]]$mean,
+                   "SD"=adj.sd[[t]][[s]]$sd,
+                   "AdjSD"=adj.sd[[t]][[s]]$adj.sd,
+                   "Log2AdjSD"=adj.sd[[t]][[s]]$log2.adj.sd,
+                   "Rank_Log2AdjSD"=compute_local_ev_rank(adj.sd[[t]][[s]]$mean,
+                                                          adj.sd[[t]][[s]]$log2.adj.sd,
+                                                          win.size=100),
+                   row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]][[s]]))
+      }
+    })
+  })
+} else {
+  adj.sd.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    data.frame("Mean"=adj.sd[[t]]$mean,
+               "SD"=adj.sd[[t]]$sd,
+               "AdjSD"=adj.sd[[t]]$adj.sd,
+               "Log2AdjSD"=adj.sd[[t]]$log2.adj.sd,
+               "Rank_Log2AdjSD"=compute_local_ev_rank(adj.sd[[t]]$mean,
+                                                      adj.sd[[t]]$log2.adj.sd,
+                                                      win.size=100),
+               row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]]))
+  })
+}
+```
+
+### Residual log2 (SD)
+```{r run-resid-log2sd}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.sd <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL } 
+      else {
+        residual_log2sd(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+      }
+    })
+  })
+} else {
+  resid.sd <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    residual_log2sd(filtered.samples$log2.tmm.cpm.gf[[t]])
+  })
+}
+
+# Bind into data frame
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.sd.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL }
+      else {
+        data.frame("Mean"=resid.sd[[t]][[s]]$mean,
+                   "Log2SD"=resid.sd[[t]][[s]]$log2.sd,
+                   "Resid_Log2SD"=resid.sd[[t]][[s]]$resid.log2.sd,
+                   "Rank_Resid_Log2SD"=compute_local_ev_rank(resid.sd[[t]][[s]]$mean,
+                                                             resid.sd[[t]][[s]]$resid.log2.sd,
+                                                             win.size=100),
+                   row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]][[s]]))
+      }
+    })
+  })
+} else {
+  resid.sd.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    data.frame("Mean"=resid.sd[[t]]$mean,
+               "Log2SD"=resid.sd[[t]]$log2.sd,
+               "Resid_Log2SD"=resid.sd[[t]]$resid.log2.sd,
+               "Rank_Resid_Log2SD"=compute_local_ev_rank(resid.sd[[t]]$mean,
+                                                         resid.sd[[t]]$resid.log2.sd,
+                                                         win.size=100),
+               row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]]))
+  })
+}
+```
+
+
+### Residual log2 (CV)^2
+```{r run-resid-log2cv}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.cv <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL } 
+      else {
+        residual_log2cv(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+      }
+    })
+  })
+} else {
+  resid.cv <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    residual_log2cv(filtered.samples$log2.tmm.cpm.gf[[t]])
+  })
+}
+
+# Bind into data frame
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.cv.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL }
+      else {
+        data.frame("Mean"=resid.cv[[t]][[s]]$mean,
+                   "Log2CV"=resid.cv[[t]][[s]]$log2.cv,
+                   "Resid_Log2CV"=resid.cv[[t]][[s]]$resid.log2.cv,
+                   "Rank_Resid_Log2CV"=compute_local_ev_rank(resid.cv[[t]][[s]]$mean,
+                                                             resid.cv[[t]][[s]]$resid.log2.cv,
+                                                             win.size=100),
+                   row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]][[s]]))
+      }
+    })
+  })
+} else {
+  resid.cv.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    data.frame("Mean"=resid.cv[[t]]$mean,
+               "Log2CV"=resid.cv[[t]]$log2.cv,
+               "Resid_Log2CV"=resid.cv[[t]]$resid.log2.cv,
+               "Rank_Resid_Log2CV"=compute_local_ev_rank(resid.cv[[t]]$mean,
+                                                         resid.cv[[t]]$resid.log2.cv,
+                                                         win.size=100),
+               row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]]))
+  })
+}
+```
+
+### Residual MAD
+```{r run-resid-mad}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.mad <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL } 
+      else {
+        residual_mad(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])
+      }
+    })
+  })
+} else {
+  resid.mad <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    residual_mad(filtered.samples$log2.tmm.cpm.gf[[t]])
+  })
+}
+
+# Bind into data frame
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.mad.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+      # Check if tissue-sex condition is included
+      if (ncol(filtered.samples$log2.tmm.cpm.gf[[t]][[s]])==0) { NULL }
+      else {
+        data.frame("Mean"=resid.mad[[t]][[s]]$mean,
+                   "MAD"=resid.mad[[t]][[s]]$mad,
+                   "Resid_MAD"=resid.mad[[t]][[s]]$resid.mad,
+                   "Rank_Resid_MAD"=compute_local_ev_rank(resid.mad[[t]][[s]]$mean,
+                                                          resid.mad[[t]][[s]]$resid.mad,
+                                                          win.size=100),
+                   row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]][[s]]))
+      }
+    })
+  })
+} else {
+  resid.mad.summary <- lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+    data.frame("Mean"=resid.mad[[t]]$mean,
+               "MAD"=resid.mad[[t]]$mad,
+               "Resid_MAD"=resid.mad[[t]]$resid.mad,
+               "Rank_Resid_MAD"=compute_local_ev_rank(resid.mad[[t]]$mean,
+                                                      resid.mad[[t]]$resid.mad,
+                                                      win.size=100),
+               row.names=rownames(filtered.samples$log2.tmm.cpm.gf[[t]]))
+  })
+}
+```
+
+
+## Bind results across conditions
+
+### Adjusted SD
+```{r}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  adj.sd.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(adj.sd.summary[[t]][[s]])) {
+          adj.sd.summary[[t]][[s]] %>%
+            tibble::rownames_to_column(var="GeneID")
+          }
+    }) %>%
+        dplyr::bind_rows(.id="Sex")        
+  }) %>%
+  dplyr::bind_rows(.id="Tissue")
+} else {
+  adj.sd.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      adj.sd.summary[[t]] %>%
+        tibble::rownames_to_column(var="GeneID")
+    }) %>%
+    dplyr::bind_rows(.id="Tissue")
+}
+
+## Add gene biotype information
+adj.sd.summary.bind$Biotype <- 
+  vapply(adj.sd.summary.bind$GeneID, FUN.VALUE=character(1), function(g) {
+    biotype$Gene.type[biotype$Gene.stable.ID==g]
+  })
+
+adj.sd.summary.bind <- adj.sd.summary.bind %>%
+  dplyr::filter(Biotype %in% c("protein_coding", "lncRNA", "lincRNA"))
+
+```
+
+### Residual log2 (SD)
+```{r}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.sd.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(resid.sd.summary[[t]][[s]])) {
+          resid.sd.summary[[t]][[s]] %>%
+            tibble::rownames_to_column(var="GeneID")
+          }
+    }) %>%
+        dplyr::bind_rows(.id="Sex")        
+  }) %>%
+  dplyr::bind_rows(.id="Tissue")
+} else {
+  resid.sd.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      resid.sd.summary[[t]] %>%
+        tibble::rownames_to_column(var="GeneID")
+    }) %>%
+    dplyr::bind_rows(.id="Tissue")
+}
+
+## Add gene biotype information
+resid.sd.summary.bind$Biotype <- 
+  vapply(resid.sd.summary.bind$GeneID, FUN.VALUE=character(1), function(g) {
+    biotype$Gene.type[biotype$Gene.stable.ID==g]
+  })
+
+resid.sd.summary.bind <- resid.sd.summary.bind %>%
+  dplyr::filter(Biotype %in% c("protein_coding", "lncRNA", "lincRNA"))
+
+```
+
+### Residual log2 (CV)^2
+```{r}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.cv.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(resid.cv.summary[[t]][[s]])) {
+          resid.cv.summary[[t]][[s]] %>%
+            tibble::rownames_to_column(var="GeneID")
+          }
+    }) %>%
+        dplyr::bind_rows(.id="Sex")        
+  }) %>%
+  dplyr::bind_rows(.id="Tissue")
+} else {
+  resid.cv.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      resid.cv.summary[[t]] %>%
+        tibble::rownames_to_column(var="GeneID")
+    }) %>%
+    dplyr::bind_rows(.id="Tissue")
+}
+
+## Add gene biotype information
+resid.cv.summary.bind$Biotype <- 
+  vapply(resid.cv.summary.bind$GeneID, FUN.VALUE=character(1), function(g) {
+    biotype$Gene.type[biotype$Gene.stable.ID==g]
+  })
+
+resid.cv.summary.bind <- resid.cv.summary.bind %>%
+  dplyr::filter(Biotype %in% c("protein_coding", "lncRNA", "lincRNA"))
+
+```
+
+### Residual MAD
+```{r}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  resid.mad.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      lapply(setNames(levels(Sex), levels(Sex)), function(s) {
+        if (!is.null(resid.mad.summary[[t]][[s]])) {
+          resid.mad.summary[[t]][[s]] %>%
+            tibble::rownames_to_column(var="GeneID")
+          }
+    }) %>%
+        dplyr::bind_rows(.id="Sex")        
+  }) %>%
+  dplyr::bind_rows(.id="Tissue")
+} else {
+  resid.mad.summary.bind <-
+    lapply(setNames(levels(Tissue), levels(Tissue)), function(t) {
+      resid.mad.summary[[t]] %>%
+        tibble::rownames_to_column(var="GeneID")
+    }) %>%
+    dplyr::bind_rows(.id="Tissue")
+}
+
+## Add gene biotype information
+resid.mad.summary.bind$Biotype <- 
+  vapply(resid.mad.summary.bind$GeneID, FUN.VALUE=character(1), function(g) {
+    biotype$Gene.type[biotype$Gene.stable.ID==g]
+  })
+
+resid.mad.summary.bind <- resid.mad.summary.bind %>%
+  dplyr::filter(Biotype %in% c("protein_coding", "lncRNA", "lincRNA"))
+
+```
+
+## All
+```{r}
+if ("Sex" %in% colnames(filtered.samples$metadata)) {
+  var.summary.bind <-
+    dplyr::full_join(adj.sd.summary.bind[,1:(ncol(adj.sd.summary.bind)-1)], 
+                     resid.sd.summary.bind[,1:(ncol(resid.sd.summary.bind)-1)], by=c("Tissue","Sex","GeneID","Mean")) %>%
+    dplyr::full_join(resid.cv.summary.bind[,1:(ncol(resid.cv.summary.bind)-1)], by=c("Tissue","Sex","GeneID","Mean")) %>%
+    dplyr::full_join(resid.mad.summary.bind, by=c("Tissue","Sex","GeneID","Mean"))
+  
+} else {
+  var.summary.bind <-
+    dplyr::full_join(adj.sd.summary.bind[,1:(ncol(adj.sd.summary.bind)-1)], 
+                     resid.sd.summary.bind[,1:(ncol(resid.sd.summary.bind)-1)], by=c("Tissue","GeneID","Mean")) %>%
+    dplyr::full_join(resid.cv.summary.bind[,1:(ncol(resid.cv.summary.bind)-1)], by=c("Tissue","GeneID","Mean")) %>%
+    dplyr::full_join(resid.mad.summary.bind, by=c("Tissue","GeneID","Mean"))
+  
+}
+
+```
+
+# Save
+```{r save-objects}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "no_combat/full_qc")    
+  } else {
+    output.path <- file.path(params$output.rds.path, "no_combat/qc1_only")
+  }
+  
+} else {
+  if (!params$qc1.only) {
+    output.path <- file.path(params$output.rds.path, "combat/full_qc")
+  } else {
+    output.path <- file.path(params$output.rds.path, "combat/qc1_only")    
+  }
+}
+
+if (!dir.exists(output.path)) { dir.create(output.path, recursive=TRUE, showWarnings=FALSE) }
+
+if (!params$all.nonzero.matrix) { 
+    # Without jackknife
+    saveRDS(adj.sd.summary,
+            file.path(output.path, 
+                      paste(params$species, "adj.sd.summary.rds", sep="_")))
+  
+    saveRDS(resid.sd.summary,
+            file.path(output.path, 
+                      paste(params$species, "resid.sd.summary.rds", sep="_")))
+    
+    saveRDS(resid.cv.summary,
+            file.path(output.path, 
+                      paste(params$species, "resid.cv.summary.rds", sep="_")))
+    
+    saveRDS(resid.mad.summary,
+            file.path(output.path, 
+                      paste(params$species, "resid.mad.summary.rds", sep="_")))
+    
+    saveRDS(var.summary.bind,
+            file.path(output.path, 
+                      paste(params$species, "var.summary.bind.rds", sep="_")))    
+  
+} else {
+    # Without jackknife  
+    saveRDS(adj.sd.summary,
+            file.path(output.path, 
+                      paste(params$species, "adj.sd.summary.nonzero.rds", sep="_")))
+  
+    saveRDS(resid.sd.summary,
+            file.path(output.path, 
+                      paste(params$species, "resid.sd.summary.nonzero.rds", sep="_")))
+    
+    saveRDS(resid.cv.summary,
+            file.path(output.path, 
+                      paste(params$species, "resid.cv.summary.nonzero.rds", sep="_")))
+    
+    saveRDS(resid.mad.summary,
+            file.path(output.path, 
+                      paste(params$species, "resid.mad.summary.nonzero.rds", sep="_")))
+    
+    saveRDS(var.summary.bind,
+            file.path(output.path, 
+                      paste(params$species, "var.summary.bind.nonzero.rds", sep="_")))    
+
+}
+```

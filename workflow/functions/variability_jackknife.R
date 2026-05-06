@@ -22,10 +22,11 @@ compute_gene_summary_stats <- function(expr.matrix) {
   vars <- matrixStats::rowVars(expr.matrix, useNames=TRUE, na.rm=TRUE)
   sds <- matrixStats::rowSds(expr.matrix, useNames=TRUE, na.rm=TRUE)
   cv.sq <- (sds/means)^2
+  mads <- matrixStats::rowMads(expr.matrix, useNames=TRUE, na.rm=TRUE)
   
   stats.df <- 
     data.frame("Mean"=means, "Median"=medians, 
-               "Var"=vars, "SD"=sds, "CV2"=cv.sq)
+               "Var"=vars, "SD"=sds, "CV2"=cv.sq, "MAD"=mads)
   stats.df$Rank_Mean <- percent_rank(stats.df$Mean)
   
   return(stats.df)
@@ -81,6 +82,20 @@ residual_log2sd <- function(expr.matrix) {
   
   model.results <- 
     list("mean"=means, "log2.sd"=log2.sd, "resid.log2.sd"=model.fit$residuals)
+  
+  return(model.results)
+}
+
+# Defined as the residual median absolute deviation (MAD)
+residual_mad <- function(expr.matrix) {
+  means <- rowMeans(expr.matrix)
+  mads <- matrixStats::rowMads(expr.matrix, useNames=TRUE)
+  
+  model.df <- data.frame("Mean"=means, "MAD"=mads)
+  model.fit <- loess(MAD~Mean, model.df, span=0.6)
+  
+  model.results <-
+    list("mean"=means, "mad"=mads, "resid.mad"=model.fit$residuals)
   
   return(model.results)
 }
@@ -320,6 +335,70 @@ jackknife_resid_log2sd <- function(expr.matrix, min.percentile=0.00, max.percent
   
   # Global rank - no sliding window applied
   jack$summary$Global_Rank_Log2SD <- dplyr::percent_rank(jack$summary$Median_Resid_Log2SD)
+  
+  # Complete cases only
+  jack$summary <- jack$summary[complete.cases(jack$summary),]
+  
+  return(jack)  
+}
+
+# Residual MAD
+jackknife_resid_mad <- function(expr.matrix, min.percentile=0.00, max.percentile=0.95, win.size=100) {
+  # Remove lowly expressed genes
+  filtered.matrix <- expr.matrix[rowMedians(expr.matrix)>1.0 &
+                                   rowMeans(expr.matrix)>1.0,]
+  
+  jack <- list()
+  jack$mean <- matrix(nrow=nrow(filtered.matrix), ncol=ncol(filtered.matrix),
+                      dimnames=list(rownames(filtered.matrix)))
+  jack$mad <- matrix(nrow=nrow(filtered.matrix), ncol=ncol(filtered.matrix),
+                     dimnames=list(rownames(filtered.matrix)))
+  jack$resid.mad <- matrix(nrow=nrow(filtered.matrix), ncol=ncol(filtered.matrix),
+                           dimnames=list(rownames(filtered.matrix)))
+  jack$rank.resid.mad <- matrix(nrow=nrow(filtered.matrix), ncol=ncol(filtered.matrix),
+                                dimnames=list(rownames(filtered.matrix)))
+  
+  # Calculate statistics per subset of n-1 samples
+  for (i in 1:ncol(filtered.matrix)) {
+    print(paste(i, "of", ncol(filtered.matrix)))
+    
+    # Variability metric
+    mad.results <- residual_mad(filtered.matrix[,-i])
+    
+    jack$mean[,i] <- mad.results$mean
+    jack$mad[,i] <- mad.results$mad
+    jack$resid.mad[,i] <- mad.results$resid.mad
+    
+    # Local variability rank within a sliding window
+    jack$rank.resid.mad[,i] <- 
+      compute_local_ev_rank(jack$mean[,i], jack$resid.mad[,i], win.size)
+  }
+  
+  # Summarize jackknife results
+  jack$summary <- 
+    data.frame("Mean_Mean"=rowMeans(jack$mean), # Jackknifed mean
+               "Median_Mean"=matrixStats::rowMedians(jack$mean, useNames=TRUE),
+               "Mean_MAD"=rowMeans(jack$mad),
+               "Median_MAD"=matrixStats::rowMedians(jack$mad, useNames=TRUE),
+               "Mean_Resid_MAD"=rowMeans(jack$resid.mad),
+               "Median_Resid_MAD"=matrixStats::rowMedians(jack$resid.mad, useNames=TRUE),
+               row.names=rownames(filtered.matrix))
+  
+  # Remove top and bottom x% of genes by expression
+  jack$summary$Rank_Mean <- dplyr::percent_rank(jack$summary$Mean_Mean)
+  jack$summary <- jack$summary[jack$summary$Rank_Mean<max.percentile &
+                                 jack$summary$Rank_Mean>min.percentile,]
+  
+  # Local and global variability rank
+  mean.local.rank.mad <- rowMeans(jack$rank.resid.mad, na.rm=TRUE)
+  median.local.rank.mad <- 
+    matrixStats::rowMedians(jack$rank.resid.mad, na.rm=TRUE, useNames=TRUE)
+  
+  jack$summary$Mean_Local_Rank_MAD <- mean.local.rank.mad[rownames(jack$summary)]
+  jack$summary$Median_Local_Rank_MAD <- median.local.rank.mad[rownames(jack$summary)]
+  
+  # Global rank - no sliding window applied
+  jack$summary$Global_Rank_MAD <- dplyr::percent_rank(jack$summary$Median_Resid_MAD)
   
   # Complete cases only
   jack$summary <- jack$summary[complete.cases(jack$summary),]

@@ -99,7 +99,6 @@ if ("Sex" %in% colnames(filtered.samples$metadata)) {
   Sex <- as.factor(filtered.samples$metadata$Sex) 
 }
 
-# [Edit] here
 # Load jackknifed expression variability estimates from 02_Variability_Jackknife.Rmd
 if (!params$all.nonzero.matrix) {
   ## Adjusted SD
@@ -115,9 +114,8 @@ if (!params$all.nonzero.matrix) {
   ## Residual CV / Local (residual) CV
   jack.resid.cv <- readRDS(
     file.path(input.variability.path,
-              paste(params$species, "jack.resid.cv.rds", sep="_")))  
-
-
+              paste(params$species, "jack.resid.cv.rds", sep="_")))
+  
 } else {
   ## Adjusted SD  
   jack.adj.sd <- readRDS(
@@ -204,6 +202,14 @@ plot_cv_vs_mean(summary.stats, filtered.samples$metadata, log2=FALSE)
 ```{r plot-log2-cv2-vs-mean}
 plot_cv_vs_mean(summary.stats, filtered.samples$metadata, log2=TRUE)
 ```
+
+
+#### MAD vs Mean
+```{r plot-mad-vs-mean}
+plot_mad_vs_mean(summary.stats, filtered.samples$metadata, log2=FALSE)
+```
+
+
 
 ## Jackknife
 

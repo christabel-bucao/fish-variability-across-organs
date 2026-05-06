@@ -180,6 +180,94 @@ plot_cv_vs_mean <- function(summary.stats, metadata, log2=FALSE) {
   }  
 }
 
+
+plot_mad_vs_mean <- function(summary.stats, metadata, log2=FALSE) {
+  Tissue <- as.factor(metadata$Tissue)
+  
+  if ("Sex" %in% colnames(metadata)) {
+    Sex <- as.factor(metadata$Sex)
+    gg <- vector(mode="list", length(levels(Tissue))*length(levels(Sex)))
+    names(gg) <- levels(interaction(Tissue, Sex, sep="_", lex.order=TRUE))
+    
+    for (t in levels(Tissue)) {
+      for (s in levels(Sex)) {
+        if (nrow(summary.stats[[t]][[s]]>0)) {
+          if (log2==FALSE) {
+            gg[[paste(t,s,sep="_")]] <-
+              ggplot(summary.stats[[t]][[s]], aes(x=Mean, y=MAD)) + 
+              geom_point(color="#440154", size=0.2, alpha=0.6) +
+              stat_density_2d(aes(fill=..level..), geom="polygon") +
+              scale_fill_continuous(type = "viridis") +
+              stat_smooth(method="loess",
+                          span=0.60,
+                          formula=y~x,
+                          se=FALSE) +
+              stat_cor(method="pearson") +
+              labs(title=gsub("_"," ",t), 
+                   subtitle=gsub("_"," ", s)) +
+              theme_bw()
+          } else {
+            gg[[paste(t,s,sep="_")]] <-
+              ggplot(summary.stats[[t]][[s]], aes(x=Mean, y=log2(MAD))) + 
+              geom_point(color="#440154", size=0.2, alpha=0.6) +
+              stat_density_2d(aes(fill=..level..), geom="polygon") +
+              scale_fill_continuous(type = "viridis") +
+              stat_smooth(method="loess",
+                          span=0.60,
+                          formula=y~x,
+                          se=FALSE) +
+              stat_cor(method="pearson") +
+              labs(title=gsub("_"," ",t), 
+                   subtitle=gsub("_"," ", s)) +
+              theme_bw()          
+          }
+        } else {
+          gg[[paste(t,s,sep="_")]] <- NULL
+        }
+      }
+    }
+  } else {
+    gg <- vector(mode="list", length(levels(Tissue)))
+    names(gg) <- levels(Tissue)
+    
+    for (t in levels(Tissue)) {
+      if (log2==FALSE) {
+        gg[[t]] <-
+          ggplot(summary.stats[[t]], aes(x=Mean, y=MAD)) + 
+          geom_point(color="#440154", size=0.2, alpha=0.6) +
+          stat_density_2d(aes(fill=..level..), geom="polygon") +
+          scale_fill_continuous(type = "viridis") +
+          stat_smooth(method="loess",
+                      span=0.60,
+                      formula=y~x,
+                      se=FALSE) +
+          stat_cor(method="pearson") +
+          labs(title=gsub("_"," ",t)) +
+          theme_bw()
+      } else {
+        gg[[t]] <-
+          ggplot(summary.stats[[t]], aes(x=Mean, y=log2(MAD))) + 
+          geom_point(color="#440154", size=0.2, alpha=0.6) +
+          stat_density_2d(aes(fill=..level..), geom="polygon") +
+          scale_fill_continuous(type = "viridis") +
+          stat_smooth(method="loess",
+                      span=0.60,
+                      formula=y~x,
+                      se=FALSE) +
+          stat_cor(method="pearson") +
+          labs(title=gsub("_"," ",t)) +
+          theme_bw()          
+      }
+    }
+  }
+  
+  for (i in seq(1,length(gg),4)) {
+    if (i+3 > length(gg)) { print(plot_grid(plotlist=gg[i:length(gg)], nrow=2, ncol=2)) } 
+    else { print(plot_grid(plotlist=gg[i:(i+3)])) }
+  }  
+}
+
+
 plot_jackknife_adj_sd_vs_mean <- function(jack.summary, metadata) {
   Tissue <- as.factor(metadata$Tissue)
   xlab <- "Mean of jackknifed means"
