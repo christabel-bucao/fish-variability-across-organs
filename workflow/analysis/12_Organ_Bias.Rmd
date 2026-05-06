@@ -13,7 +13,7 @@ params:
   all.nonzero.matrix: FALSE
   randomized.mean.expr: FALSE
   qc1.only: FALSE
-  combat: TRUE
+  combat: FALSE
   seed.run: 12345
 ---
 

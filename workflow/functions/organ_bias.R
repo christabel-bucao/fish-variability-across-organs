@@ -108,6 +108,48 @@ compute_glass_delta_effect_size <- function(comparisons.df, value=c("mean","log2
   return(effect.size.value)
 }
 
+# Compute effect size (Glass's delta)
+compute_glass_delta_effect_size_v2 <- function(comparisons.df, metric="") {
+  if ("Sex" %in% colnames(comparisons.df)) {
+    grouping <- c("Bias", "Tissue", "Sex")  
+  } else { grouping <- c("Bias", "Tissue") }
+  
+
+    value.comparisons.summary <- comparisons.df %>%
+      dplyr::group_by(across(c(all_of(grouping),"TissueBias"))) %>%
+      dplyr::summarise(
+        Mean_Value = mean(.data[[metric]]),
+        SD_Value = sd(.data[[metric]]),
+      ) %>%
+      dplyr::ungroup()
+  
+  # Separate foreground gene set and background ('other')
+  mean.value.foreground <- value.comparisons.summary %>%
+    dplyr::filter(TissueBias!="other")
+  mean.value.background <- value.comparisons.summary %>%
+    dplyr::filter(TissueBias=="other")
+  
+  # Difference in group means
+  diff.mean.value <-
+    dplyr::inner_join(
+      mean.value.foreground[,c(grouping, "Mean_Value", "SD_Value")],
+      mean.value.background[,c(grouping, "Mean_Value", "SD_Value")],
+      by=grouping,
+      suffix=c("_Foreground","_Other"))
+  
+  diff.mean.value$DiffMeans_Value <-
+    diff.mean.value$Mean_Value_Foreground - diff.mean.value$Mean_Value_Other
+  
+  # Effect size (Glass's delta)
+  ## Defined as the difference of the group means divided by the standard deviation of the reference group ('other')
+  effect.size.value <- diff.mean.value
+  effect.size.value$GlassDelta <-
+    diff.mean.value$DiffMeans_Value / diff.mean.value$SD_Value_Other
+  
+  return(effect.size.value)
+}
+
+
 # Pairwise Wilcoxon test
 compute_pairwise_comparisons <- function(comparisons.df, effect.size.df, value=c("mean","log2cv","residual_variation","variability"), apply.pvalue.cutoff=TRUE, adj.p=0.05, order.levels) {
   if ("Sex" %in% colnames(comparisons.df)) {
@@ -185,6 +227,56 @@ compute_pairwise_comparisons <- function(comparisons.df, effect.size.df, value=c
     return(effect.size.value.wilcox.complete)
   }
 }
+
+# Pairwise Wilcoxon test
+compute_pairwise_comparisons_v2 <- function(comparisons.df, effect.size.df, metric="", apply.pvalue.cutoff=TRUE, adj.p=0.05, order.levels) {
+  if ("Sex" %in% colnames(comparisons.df)) {
+    grouping <- c("Bias", "Tissue", "Sex")  
+  } else { grouping <- c("Bias", "Tissue") }
+  
+  value.wilcox.df <- 
+    compare_means(formula=as.formula(paste0(metric, " ~ TissueBias")),
+                  data=comparisons.df,
+                  group.by=grouping,
+                  method="wilcox.test",
+                  p.adjust.method="BH",
+                  ref.group="other")
+    
+  
+  # Add effect size
+  effect.size.value.wilcox.df <- value.wilcox.df %>%
+    dplyr::inner_join(effect.size.df, by=grouping)
+  
+  # Add missing comparisons (for heatmap visualization)
+  if ("Sex" %in% colnames(comparisons.df)) {
+    effect.size.value.wilcox.complete <- effect.size.value.wilcox.df %>%
+      tidyr::complete(Bias, Tissue, Sex)
+  } else {
+    effect.size.value.wilcox.complete <- effect.size.value.wilcox.df %>%
+      tidyr::complete(Bias, Tissue)    
+  }
+  
+  # Retain comparisons that pass the adjusted p-value cutoff
+  if (apply.pvalue.cutoff==TRUE) {
+    effect.size.value.wilcox.complete.signif <- effect.size.value.wilcox.complete %>%
+      dplyr::filter(is.na(effect.size.value.wilcox.complete$p.adj) | 
+                      effect.size.value.wilcox.complete$p.adj < adj.p)      
+    
+    # Reorder levels (for heatmap visualization)
+    effect.size.value.wilcox.complete.signif$Bias <- 
+      factor(effect.size.value.wilcox.complete.signif$Bias, levels=order.levels)
+    
+    return(effect.size.value.wilcox.complete.signif)
+    
+  } else {
+    # Reorder levels (for heatmap visualization)
+    effect.size.value.wilcox.complete$Bias <- 
+      factor(effect.size.value.wilcox.complete$Bias, levels=order.levels)
+    
+    return(effect.size.value.wilcox.complete)
+  }
+}
+
 
 bind_pairwise_comparisons <- function(comparisons.list, apply.pvalue.cutoff=TRUE, adj.p=0.05) {
   # No adjusted p-value cutoff

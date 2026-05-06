@@ -264,6 +264,44 @@ boxplot_resid_var_by_organ_bias <- function(df, species="", tissue="", sex=NA) {
           legend.position="none")  
 }
 
+boxplot_var_metric_by_organ_bias <- function(df, metric="", species="", tissue="", ylab="", sex=NA) {
+  tissue <- gsub("_", " ", tissue)
+  comparisons <- list(c("broad","focal"),c(tissue,"other"))
+  
+  df$Tissue <- gsub("_", " ", df$Tissue)
+  df$TissueBias <- gsub("_", " ", df$TissueBias)
+  
+  # Reorder factor levels
+  df$TissueBias <- factor(df$TissueBias, levels=c("broad","focal",tissue,"other"))  
+  
+  ggplot(df,
+         aes(x=TissueBias, y=.data[[metric]], fill=TissueBias)) +
+    stat_boxplot(geom='errorbar') +
+    geom_boxplot(notch=TRUE) +
+    stat_summary(fun.data=annotate_n, geom="text", fun=median,
+                 position=position_dodge(width=0.75), size=4.5) +
+    #geom_hline(yintercept=median(df$Mean_Local_Rank_Log2CV), linetype=3, size=0.5) +
+    geom_hline(yintercept=0.0, linetype=3, size=0.5) +
+    stat_compare_means(aes(label=..p.signif..),
+                       test="wilcox.test",
+                       comparisons=comparisons) +
+    facet_wrap(vars(Tissue), nrow=2) +
+    labs(title=paste(species, " (", sex, ")", sep=""),
+         subtitle=paste(tissue, "biased genes", sep="-"),
+         x="Organ bias",
+         y=ylab,
+         fill="Organ bias") +
+    theme_bw() +
+    theme(plot.title=element_text(size=20),
+          plot.subtitle=element_text(size=18),
+          axis.title=element_text(size=18),
+          axis.text=element_text(size=14),
+          strip.text=element_text(size=14),
+          panel.spacing.x=unit(1.1,"lines"),
+          legend.position="none")  
+}
+
+
 boxplot_variability_by_organ_bias <- function(df, species="", tissue="", sex=NA) {
   tissue <- gsub("_", " ", tissue)
   comparisons <- list(c("broad","focal"),c(tissue,"other"))
@@ -340,7 +378,46 @@ boxplot_variability_example <- function(df, species="", tissue="", ylab="Express
           legend.position="none")   
 }
 
-heatmap_effect_size_pairwise_comparisons <- function(wilcox.df, species, value=c("mean","log2cv","residual_variation","variability"), order.levels) {
+boxplot_variability_example_v2 <- function(df, species="", tissue="", metric="", ylab="Expression variability rank", color) {
+  colors <- c("#999999","#999999",color,color,color)
+  
+  facet.vars <- set_facet_vars(df)
+  tissue <- gsub("_", " ", tissue)
+  comparisons <- list(c("broad","focal"),c(tissue,"other"))
+  
+  df$Tissue <- gsub("_", " ", df$Tissue)
+  
+  # Reorder factor levels
+  df$TissueBias <- factor(df$TissueBias, levels=c("broad","focal",tissue,"other"))  
+  
+  ggplot(df,
+         aes(x=TissueBias, y=.data[[metric]], fill=TissueBias)) +
+    stat_boxplot(geom='errorbar') +
+    geom_boxplot(notch=TRUE, alpha=0.6) +
+    scale_fill_manual(values=colors) +
+    stat_summary(fun.data=annotate_n, geom="text", fun=median,
+                 position=position_dodge(width=0.75), size=4.5) +
+    #geom_hline(yintercept=0.5, linetype=3, size=0.5) +
+    stat_compare_means(aes(label=..p.signif..),
+                       test="wilcox.test",
+                       comparisons=comparisons) +
+    facet_wrap(facet.vars, nrow=2) +
+    labs(title=paste(tissue, "biased genes", sep="-"),
+         subtitle=species,
+         x="Organ bias",
+         y=ylab,
+         fill="Organ bias") +
+    theme_bw() +
+    theme(plot.title=element_text(size=20),
+          plot.subtitle=element_text(size=18, face="italic"),
+          axis.title=element_text(size=18),
+          axis.text=element_text(size=14),
+          strip.text=element_text(size=14),
+          panel.spacing.x=unit(1.1,"lines"),
+          legend.position="none")   
+}
+
+heatmap_effect_size_pairwise_comparisons <- function(wilcox.df, species, value=c("mean","log2cv","residual_variation","variability"), title="", order.levels) {
   wilcox.df$Bias <- gsub("_", " ", wilcox.df$Bias)
   wilcox.df$Tissue <- gsub("_", " ", wilcox.df$Tissue)
   
@@ -348,14 +425,16 @@ heatmap_effect_size_pairwise_comparisons <- function(wilcox.df, species, value=c
   wilcox.df$Bias <- factor(wilcox.df$Bias, levels=gsub("_", " ", order.levels))
   wilcox.df$Tissue <- factor(wilcox.df$Tissue, levels=gsub("_", " ", order.levels))
   
-  if (value=="mean") {
-    title <- "Expression levels"
-  } else if (value=="log2cv") { 
-    title <- "Log-coefficient of variation"
-  } else if (value=="residual_variation") {
-    title <- "Residual variation"      
-  }else if (value=="variability") {
-    title <- "Variability ranks"      
+  if (title=="") { 
+    if (value=="mean") {
+      title <- "Expression levels"
+    } else if (value=="log2cv") { 
+      title <- "Log-coefficient of variation"
+    } else if (value=="residual_variation") {
+      title <- "Residual variation"      
+    } else if (value=="variability") {
+      title <- "Variability ranks"          
+    }
   }
   
   custom_theme <- theme(plot.title=element_text(size=20),
@@ -396,7 +475,7 @@ heatmap_effect_size_pairwise_comparisons <- function(wilcox.df, species, value=c
   }
 }
 
-heatmap_effect_size_pairwise_comparisons_blue2red <- function(wilcox.df, species, value=c("mean","log2cv","residual_variation","variability"), adj.p=0.05, order.levels) {
+heatmap_effect_size_pairwise_comparisons_blue2red <- function(wilcox.df, species, value=c("mean","log2cv","residual_variation","variability"), title="", adj.p=0.05, order.levels) {
   wilcox.df$Bias <- gsub("_", " ", wilcox.df$Bias)
   wilcox.df$Tissue <- gsub("_", " ", wilcox.df$Tissue)
   
@@ -404,14 +483,16 @@ heatmap_effect_size_pairwise_comparisons_blue2red <- function(wilcox.df, species
   wilcox.df$Bias <- factor(wilcox.df$Bias, levels=gsub("_", " ", order.levels))
   wilcox.df$Tissue <- factor(wilcox.df$Tissue, levels=gsub("_", " ", order.levels))
   
-  if (value=="mean") {
-    title <- "Expression levels"
-  } else if (value=="log2cv") { 
-    title <- "Log-coefficient of variation"
-  } else if (value=="residual_variation") {
-    title <- "Residual variation"      
-  }else if (value=="variability") {
-    title <- "Variability ranks"      
+  if (title=="") { 
+    if (value=="mean") {
+      title <- "Expression levels"
+    } else if (value=="log2cv") { 
+      title <- "Log-coefficient of variation"
+    } else if (value=="residual_variation") {
+      title <- "Residual variation"      
+    } else if (value=="variability") {
+      title <- "Variability ranks"          
+    }
   }
     
   custom_theme <- theme(plot.title=element_text(size=20),
