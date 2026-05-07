@@ -19,6 +19,7 @@ params:
   min.percentile: 0.00
   max.percentile: 0.95
   win.size: 100
+  qc1.only: FALSE
   combat: FALSE
 ---
 
@@ -65,9 +66,19 @@ biotype <-
 ### Expression levels
 ```{r import-expression-levels}
 if (!params$combat) {
-  input.samples.path <- file.path(params$input.samples.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.samples.path <- file.path(params$input.samples.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.samples.path <- file.path(params$input.samples.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.samples.path <- file.path(params$input.samples.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.samples.path <- file.path(params$input.samples.rds.path, "combat", "full_qc")    
+  } else {
+    input.samples.path <- file.path(params$input.samples.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 # Load saved data from 01_Filter_Samples.Rmd
@@ -86,9 +97,19 @@ samples.norm.across <- readRDS(
 ### Expression variability
 ```{r import-variability}
 if (!params$combat) {
-  input.variability.path <- file.path(params$input.variability.rds.path, "no_combat")
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.rds.path, "no_combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.rds.path, "no_combat", "qc1_only")        
+  }
+
 } else {
-  input.variability.path <- file.path(params$input.variability.rds.path, "combat")
+  if (!params$qc1.only) {
+    input.variability.path <- file.path(params$input.variability.rds.path, "combat", "full_qc")    
+  } else {
+    input.variability.path <- file.path(params$input.variability.rds.path, "combat", "qc1_only")        
+  }
+
 }
 
 # Load processed expression variability estimates from 03_Variability_Plots.Rmd
