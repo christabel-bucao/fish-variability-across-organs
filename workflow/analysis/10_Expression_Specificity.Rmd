@@ -42,7 +42,7 @@ source("../functions/helper_functions.R")
 sessionInfo()
 ```
 
-## [Edit] Data
+## Data
 ```{r import-filtered-samples}
 if (!params$combat) {
   if (!params$qc1.only) {

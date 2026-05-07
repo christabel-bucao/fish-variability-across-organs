@@ -79,8 +79,9 @@ if (!params$combat) {
 } else {
   if (!params$qc1.only) {
     input.tau.path <- file.path(params$input.tau.rds.path, "combat", "full_qc")    
+  } else {
+    input.tau.path <- file.path(params$input.tau.rds.path, "combat", "qc1_only")     
   }
-    input.tau.path <- file.path(params$input.tau.rds.path, "combat", "qc1_only")    
 }
 
 # Load expression specificity computations from 10_Expression_Specificity.Rmd
