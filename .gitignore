@@ -3,6 +3,8 @@
 /data/counts/
 /data/fastq/
 /docs/
+/results/*/combat/
+/results/*/no_combat/qc1_only
 /trash/
 /workflow/.Rproj.user/
 /workflow/.snakemake/
