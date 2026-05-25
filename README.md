@@ -1,4 +1,4 @@
-# Inter-individual gene expression variability implies stable regulation of brain-biased genes across organs
+# Inter-individual gene expression variability implies stable regulation of brain-biased genes across organs in three ray-finned fishes
 
 Christabel F. Bucao<sup>1,2</sup>, Consolée Aletti<sup>1</sup>, Alexandre Laverré<sup>1,2</sup>, Sébastien Moretti<sup>1,2</sup>, Alexandra Trouvé<sup>1</sup>, Andrew W. Thompson<sup>3,4,5</sup>, Brett L. Racicot<sup>4</sup>, Catherine A. Wilson<sup>6</sup>, Julien Bobe<sup>7</sup>, Ingo Braasch<sup>4,5</sup>, Yann Guiguen<sup>7</sup>, John H. Postlethwait<sup>6</sup>, Marc Robinson-Rechavi<sup>1,2</sup>
 
