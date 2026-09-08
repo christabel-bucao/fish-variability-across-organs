@@ -48,7 +48,7 @@ species.tree.group <- tidytree::groupOTU(species.tree, .node=list(c(185,183,184,
 species.tree.group@phylo$tip.label <- gsub("_", " ", species.tree@phylo$tip.label)
 ```
 
-```{r plot-species-tree, fig.width=12, fig.height=8}
+```{r plot-species-tree, fig.width=16, fig.height=9}
 full.ggtree <- ggtree(species.tree.group, aes(color=group))
 full.ggtree$data$group[176] <- 0
 full.ggtree$data$group[183] <- 0
@@ -62,27 +62,27 @@ collapsed.ggtree <- collapse(full.ggtree, node=187) %>%
   collapse(node=310)
 
 collapsed.ggtree +
-  geom_tiplab(aes(label=label, subset=c(label %in% c("Lepisosteus oculatus","Esox lucius","Danio rerio")), color=group),
-              fontface='italic', size=5, color="#000000") +
-  scale_color_manual(values=c("#A9A9A9","#00BFC4")) +
+  geom_tiplab(aes(label=label, 
+                  subset=c(label %in% c("Lepisosteus oculatus","Esox lucius","Danio rerio")), 
+                  color=group),
+              fontface='italic', size=9, color="#000000") +
+  #scale_color_manual(values=c("#A9A9A9","#00BFC4")) +
+  scale_color_manual(values=c("#878787","#002F6C")) +
   geom_nodelab(aes(label=label, 
                    subset=c(label %in% c("Euteleostomi","Actinopterygii","Neopterygii",
                                          "Osteoglossocephalai","Clupeocephala",
                                          "Euteleosteomorpha","Protacanthopterygii",
                                          "Otomorpha","Otophysi"))), 
-               size=5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#00BFC4") +
+               size=8, nudge_x=-0.15, nudge_y=0.3, hjust=1, color="#002F6C") +
   geom_nodelab(aes(label=label, 
                    subset=c(!(label %in% c("Euteleostomi","Actinopterygii","Neopterygii",
                                          "Osteoglossocephalai","Clupeocephala",
                                          "Euteleosteomorpha","Protacanthopterygii",
                                          "Otomorpha","Otophysi")))), 
-               size=5, nudge_x=-0.05, nudge_y=0.15, hjust=1, color="#A9A9A9") +
-  xlim(c(-1,7.5)) +
+               size=8, nudge_x=-0.15, nudge_y=0.3, hjust=1, color="#878787") +
+  xlim(c(-1,8)) +
   coord_cartesian() +
   theme_tree2() +
   theme(legend.position="none", plot.margin = unit(c(25,15,25,15), "mm"),
         axis.text.x=element_text(size=12))
 ```
-
-
-
