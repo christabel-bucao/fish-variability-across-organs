@@ -1,24 +1,28 @@
 # Inter-individual gene expression variability implies stable regulation of brain-biased genes across organs in three ray-finned fishes
 
-Christabel F. Bucao<sup>1,2</sup>, Consolée Aletti<sup>1</sup>, Alexandre Laverré<sup>1,2</sup>, Sébastien Moretti<sup>1,2</sup>, Alexandra Trouvé<sup>1</sup>, Andrew W. Thompson<sup>3,4,5</sup>, Brett L. Racicot<sup>4</sup>, Catherine A. Wilson<sup>6</sup>, Julien Bobe<sup>7</sup>, Ingo Braasch<sup>4,5</sup>, Yann Guiguen<sup>7</sup>, John H. Postlethwait<sup>6</sup>, Marc Robinson-Rechavi<sup>1,2</sup>
+Christabel F. Bucao<sup>1,2*</sup>, Consolée Aletti<sup>1</sup>, Alexandre Laverré<sup>1,2</sup>, Sébastien Moretti<sup>1,2</sup>, Alexandra Trouvé<sup>1</sup>, Andrew W. Thompson<sup>3,4,5</sup>, Brett L. Racicot<sup>4</sup>, Catherine A. Wilson<sup>6</sup>, Julien Bobe<sup>7</sup>, Ingo Braasch<sup>4,5</sup>, Yann Guiguen<sup>7</sup>, John H. Postlethwait<sup>6</sup>, Marc Robinson-Rechavi<sup>1,2</sup>
 
-<sup>1</sup> Department of Ecology and Evolution, University of Lausanne, Lausanne, Switzerland
+<sup>1</sup> Department of Ecology and Evolution, University of Lausanne, CH-1015 Lausanne, Switzerland
 \
-<sup>2</sup> SIB Swiss Institute of Bioinformatics, Lausanne, Switzerland
+<sup>2</sup> SIB Swiss Institute of Bioinformatics, CH-1015 Lausanne, Switzerland
 \
-<sup>3</sup> Department of Biological Sciences, Western Michigan University, Kalamazoo, Michigan, USA
+<sup>3</sup> Department of Biological Sciences, Western Michigan University, Kalamazoo, Michigan 49008, USA
 \
-<sup>4</sup> ﻿Department of Integrative Biology, Michigan State University, East Lansing, Michigan, USA
+<sup>4</sup> ﻿Department of Integrative Biology, Michigan State University, East Lansing, Michigan 48824, USA
 \
-<sup>5</sup> Ecology, Evolution, and Behavior Program, Michigan State University, East Lansing, Michigan, USA
+<sup>5</sup> Ecology, Evolution, and Behavior Program, Michigan State University, East Lansing, Michigan 48824, USA
 \
-<sup>6</sup> ﻿Institute of Neuroscience, University of Oregon, Eugene, Oregon, USA
+<sup>6</sup> ﻿Institute of Neuroscience, University of Oregon, Eugene, Oregon 97403, USA
 \
 <sup>7</sup> INRAE, LPGP, Rennes 35000, France
+\
+<sup>*</sup> Present address: Molecular Systems Biology, European Molecular Biology Laboratory, 69117 Heidelberg, Germany
+
 
 ## Abstract
 
 Phenotypic variation among individuals provides the raw material for evolution, and gene expression is a key mediator between genetic and phenotypic variation. As for phenotypes, the range of gene expression is limited and biased by evolutionary and developmental constraints. Observed expression variability due to biomolecular stochasticity and cell-to-cell heterogeneity has been well-studied in isogenic populations of unicellular organisms. However, for multicellular organisms with a diversity of cells and tissues sharing the same genetic background, the interplay between expression variability, gene and organ function, and gene regulation remains an open question. Here, we use highly multiplexed 3’-end bulk RNA sequencing to generate transcriptome profiles spanning at least nine organs in outbred individuals of three ray-finned fish species: zebrafish, Northern pike, and spotted gar. Per organ, we quantify individual-to-individual gene expression variability independent of mean expression level. Lowly variable genes are enriched in cellular housekeeping functions whereas highly variable genes are enriched in stimulus-response functions. Furthermore, highly variable genes evolve under weaker purifying selection at the protein-coding sequence, indicating that intra-species expression variability predicts inter-species protein sequence divergence. Genes that are broadly expressed across organs are both highly expressed and lowly variable, whereas organ-biased genes are typically highly variable within their top organ. Among organ-biased genes, patterns of expression variance are dependent on the top organ. Specifically, brain- and gonads-biased genes have lowly variable expression across different organs, suggesting stabilizing selection. These patterns suggest that gene regulatory mechanisms evolve under organ-specific selective pressures.
+
 
 ## Directory Structure
 - `config/`: Contains YAML file indicating package versions for conda environment
@@ -36,7 +40,7 @@ Phenotypic variation among individuals provides the raw material for evolution, 
   - `analysis/`: Contains all steps of the analysis pipeline, available as .Rmd files
   - `functions/`: Contains all functions used for analysis/
   - `renv/`: Used for package management in R
-  - `run_pipeline.R`: Runs all the steps under analysis/
+  - `run_pipeline.R` and `run_pipeline_revisions.R`: Runs all the steps under analysis/
   - `run_go_figure.sh`: Runs [GO-Figure!](https://gitlab.com/evogenlab/GO-Figure) 1.0.0 (downloaded separately)
   - `demultiplex_brbseq_fastq.sh`: Used for demultiplexing BRB-seq fastq files using [BRB-seqTools](https://github.com/DeplanckeLab/BRB-seqTools) 1.6.1 (downloaded separately) for uploading to NCBI SRA
   - `rename_fastq_files.sh`: Used for renaming demultiplexed fastq files by mapping each barcode to their corresponding sample name
@@ -48,6 +52,8 @@ Phenotypic variation among individuals provides the raw material for evolution, 
 - **DRE**: *Danio rerio* (zebrafish)
 
 ## Links
+**2026-05-28:** Check out the [updated preprint](https://doi.org/10.1101/2024.11.11.623020)!
+
 **2025-09-02:** Check out the [updated preprint](https://doi.org/10.1101/2024.11.11.623020)!
 \
 **2024-11-12:** Check out the [preprint](https://doi.org/10.1101/2024.11.11.623020)!
