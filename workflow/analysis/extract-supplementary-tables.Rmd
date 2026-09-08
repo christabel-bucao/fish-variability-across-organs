@@ -1,0 +1,291 @@
+---
+title: "Extract supplementary tables"
+author: "Bucao, Christabel Floi"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  input.var.path: "../../results/03_Variability_Plots"
+  input.go.path: "../../results/07_GO_Enrichment"
+  input.camera.path: "../../results/07b_GO_cameraPR"
+  input.selectome.path: "../../results/08_Selection"
+  input.tau.path: "../../results/10_Expression_Specificity"
+  input.organ.var.path: "../../results/12_Organ_Bias"
+  species: "DRE"
+  species.name: "Danio rerio"
+  tau.cutoff: 0.30
+  qc1.only: FALSE
+  combat: FALSE
+---
+
+# Libraries
+```{r}
+library(dplyr)
+```
+
+
+# Supplemental Table 4 - Variability metric
+
+## Import rds
+```{r}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.var.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.var.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.var.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.var.path, "combat", "qc1_only")
+  }
+
+}
+
+species <- c("DRE"="Danio_rerio", "ELU"="Esox_lucius", "LOC"="Lepisosteus_oculatus")
+
+jack.resid.cv.bind <- lapply(setNames(names(species), species), function(sp) {
+  readRDS(file.path(input.path, paste(sp, "jack.resid.cv.bind.rds", sep="_")))
+})
+```
+
+## Organize df
+```{r}
+jack.resid.cv.bind[["Lepisosteus_oculatus"]]$Sex <- NA
+jack.resid.cv.bind <- dplyr::bind_rows(jack.resid.cv.bind, .id="Species")
+```
+
+## Export df as tsv
+```{r}
+write.table(jack.resid.cv.bind, 
+            file=file.path(input.path, "Supplemental_Table_S4.tsv"),
+            quote=TRUE, row.names=FALSE, col.names=TRUE, sep="\t")
+```
+
+
+# Supplemental Table 5 - GOStats
+
+## Import rds
+```{r}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.go.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.go.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.go.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.go.path, "combat", "qc1_only")
+  }
+
+}
+
+go.aggregate <- readRDS(file.path(input.path, paste(params$species, "go.aggregate.rds", sep="_"))) 
+```
+
+## Organize df
+```{r}
+EV <- c("LV","MV","HV")
+
+# Enriched
+go.aggregate.over.bind <- lapply(setNames(EV, EV), function(ev) {
+  go.aggregate[[ev]][["over"]]
+}) %>%
+  dplyr::bind_rows(.id="VarCategory")
+go.aggregate.over.bind$EnrichmentTest <- rep("GOStats",nrow(go.aggregate.over.bind))
+go.aggregate.over.bind$TestDirection <- rep("enrichment",nrow(go.aggregate.over.bind))
+
+# Depleted
+go.aggregate.under.bind <- lapply(setNames(EV, EV), function(ev) {
+  go.aggregate[[ev]][["under"]]
+}) %>%
+  dplyr::bind_rows(.id="VarCategory")
+go.aggregate.under.bind$EnrichmentTest <- rep("GOStats",nrow(go.aggregate.under.bind))
+go.aggregate.under.bind$TestDirection <- rep("depletion",nrow(go.aggregate.under.bind))
+
+
+go.aggregate.bind <- go.aggregate.over.bind %>%
+  dplyr::bind_rows(go.aggregate.under.bind)
+
+rm(go.aggregate.over.bind, go.aggregate.under.bind)
+```
+
+## Export df as tsv
+```{r}
+write.table(go.aggregate.bind, 
+            file=file.path(input.path, "Supplemental_Table_S5.tsv"),
+            quote=TRUE, row.names=FALSE, col.names=TRUE, sep="\t")
+```
+
+
+# Supplemental Table 6 - cameraPR
+
+## Import rds
+```{r}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.camera.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.camera.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.camera.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.camera.path, "combat", "qc1_only")
+  }
+
+}
+
+camera.bind <- readRDS(file.path(input.path, paste(params$species, "camera.bind.rds", sep="_")))
+```
+
+## Organize df
+```{r}
+camera.bind <- dplyr::bind_rows(camera.bind)
+camera.bind$EnrichmentTest <- rep("cameraPR", nrow(camera.bind))
+```
+
+## Export df as tsv
+```{r}
+write.table(camera.bind, 
+            file=file.path(input.path, "Supplemental_Table_S6.tsv"),
+            quote=TRUE, row.names=FALSE, col.names=TRUE, sep="\t")
+```
+
+
+# Supplemental Tables 7 & 8 - Selectome
+
+## Import rds
+```{r}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.selectome.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.selectome.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.selectome.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.selectome.path, "combat", "qc1_only")
+  }
+
+}
+
+
+selectome.sub <- 
+  readRDS(file.path(input.path, paste(params$species, "selectome.sub.rds", sep="_")))
+selectome.sub <- selectome.sub[["Bgd"]]
+
+
+selectome.groupby.ev <- 
+  readRDS(file.path(input.path, paste(params$species, "selectome.bgd.groupby.gene.ev.median.rds", sep="_")))
+```
+
+## Export df as tsv
+```{r}
+write.table(selectome.sub, 
+            file=file.path(input.path, "Supplemental_Table_S7.tsv"),
+            quote=TRUE, row.names=FALSE, col.names=TRUE, sep="\t")
+
+write.table(selectome.groupby.ev, 
+            file=file.path(input.path, "Supplemental_Table_S8.tsv"),
+            quote=TRUE, row.names=FALSE, col.names=TRUE, sep="\t")
+```
+
+
+# Supplemental Table S10 - Expression specificity
+
+## Import rds
+```{r}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.tau.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.tau.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.tau.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.tau.path, "combat", "qc1_only")
+  }
+
+}
+
+species <- c("DRE"="Danio_rerio", "ELU"="Esox_lucius", "LOC"="Lepisosteus_oculatus")
+
+filtered.samples.common <- lapply(setNames(names(species), species), function(sp) {
+      readRDS(file.path(input.path, paste(sp, "filtered.samples.common.rds", sep="_")))   
+})
+```
+
+## Organize df
+```{r}
+expr.rank.first <- lapply(setNames(species, species), function(sp) {
+  filtered.samples.common[[sp]]$expr.rank.first
+}) %>%
+  dplyr::bind_rows(.id="Species")
+```
+
+## Export df as tsv
+```{r}
+write.table(expr.rank.first, 
+            file=file.path(input.path, "Supplemental_Table_S10.tsv"),
+            quote=TRUE, row.names=FALSE, col.names=TRUE, sep="\t")
+```
+
+
+# Supplemental Table S11 - Organ bias & variability
+
+## Import rds
+```{r}
+if (!params$combat) {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.organ.var.path, "no_combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.organ.var.path, "no_combat", "qc1_only")        
+  }
+
+} else {
+  if (!params$qc1.only) {
+    input.path <- file.path(params$input.organ.var.path, "combat", "full_qc")    
+  } else {
+    input.path <- file.path(params$input.organ.var.path, "combat", "qc1_only")
+  }
+
+}
+
+species <- c("DRE"="Danio_rerio", "ELU"="Esox_lucius", "LOC"="Lepisosteus_oculatus")
+
+comparisons.expr.var <- lapply(setNames(names(species), species), function(sp) {
+  readRDS(file.path(input.path, 
+                    paste(sp, "comparisons.expr.var",
+                          paste(paste0("tau", params$tau.cutoff), "rds", sep="."), sep="_")))  
+})
+```
+
+## Organize df
+```{r}
+comparisons.wilcox.complete <- lapply(setNames(species, species), function(sp) {
+  comparisons.expr.var[[sp]]$wilcox.complete
+}) %>%
+  dplyr::bind_rows(.id="Species")
+```
+
+## Export df as tsv
+```{r}
+write.table(comparisons.wilcox.complete, 
+            file=file.path(input.path, "Supplemental_Table_S11.tsv"),
+            quote=TRUE, row.names=FALSE, col.names=TRUE, sep="\t")
+```
+
+
