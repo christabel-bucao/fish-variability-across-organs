@@ -439,11 +439,11 @@ heatmap_effect_size_pairwise_comparisons <- function(wilcox.df, species, value=c
   
   custom_theme <- theme(plot.title=element_text(size=20),
                         plot.subtitle=element_text(size=18, face="italic"),
-                        axis.title=element_text(size=18),
-                        axis.text=element_text(size=14),
-                        strip.text=element_text(size=14),
-                        legend.title=element_text(size=14),
-                        legend.text=element_text(size=14),
+                        axis.title=element_text(size=24),
+                        axis.text=element_text(size=20),
+                        strip.text=element_text(size=20),
+                        legend.title=element_text(size=18),
+                        legend.text=element_text(size=18),
                         panel.grid.major = element_blank())    
 
   if ("Sex" %in% colnames(wilcox.df)) {
@@ -497,11 +497,11 @@ heatmap_effect_size_pairwise_comparisons_blue2red <- function(wilcox.df, species
     
   custom_theme <- theme(plot.title=element_text(size=20),
                         plot.subtitle=element_text(size=18, face="italic"),
-                        axis.title=element_text(size=18),
-                        axis.text=element_text(size=14),
-                        strip.text=element_text(size=14),
-                        legend.title=element_text(size=14),
-                        legend.text=element_text(size=14),
+                        axis.title=element_text(size=24),
+                        axis.text=element_text(size=20),
+                        strip.text=element_text(size=20),
+                        legend.title=element_text(size=18),
+                        legend.text=element_text(size=18),
                         panel.grid.major = element_blank())    
   
   if ("Sex" %in% colnames(wilcox.df)) {
@@ -560,11 +560,11 @@ heatmap_effect_size_combined_comparisons <- function(wilcox.df, cross.species=TR
            fill="Effect size") +
       theme_bw() +
       theme(plot.title=element_text(size=24),
-            axis.title=element_text(size=18),
-            axis.text=element_text(size=14),
+            axis.title=element_text(size=20),
+            axis.text=element_text(size=16),
             strip.text=element_text(size=18),
             legend.title=element_text(size=18),
-            legend.text=element_text(size=12, angle=30),
+            legend.text=element_text(size=14, angle=30),
             panel.grid.major=element_blank(),
             panel.spacing.x=unit(1.1,"lines"),
             panel.spacing.y=unit(1.1,"lines"),
@@ -587,11 +587,11 @@ heatmap_effect_size_combined_comparisons <- function(wilcox.df, cross.species=TR
       theme_bw() +
       theme(plot.title=element_text(size=24),
             plot.subtitle=element_text(size=18, face="italic"),
-            axis.title=element_text(size=18),
-            axis.text=element_text(size=14),
+            axis.title=element_text(size=20),
+            axis.text=element_text(size=16),
             strip.text=element_text(size=18),
             legend.title=element_text(size=18),
-            legend.text=element_text(size=12, angle=30),
+            legend.text=element_text(size=14, angle=30),
             panel.grid.major=element_blank(),
             panel.spacing.x=unit(1.1,"lines"),
             panel.spacing.y=unit(1.1,"lines"),
@@ -620,18 +620,7 @@ heatmap_effect_size_combined_comparisons_blue2red <- function(wilcox.df, cross.s
                         panel.grid.major=element_blank(),
                         panel.spacing.x=unit(1.1,"lines"),
                         panel.spacing.y=unit(1.1,"lines"),
-                        legend.position="bottom") 
-  
-  #custom_theme <- theme(plot.title=element_text(size=24),
-  #                      axis.title=element_text(size=18),
-  #                      axis.text=element_text(size=14),
-  #                      strip.text=element_text(size=18),
-  #                      legend.title=element_text(size=18),
-  #                      legend.text=element_text(size=12, angle=30),
-  #                      panel.grid.major=element_blank(),
-  #                      panel.spacing.x=unit(1.1,"lines"),
-  #                      panel.spacing.y=unit(1.1,"lines"),
-  #                      legend.position="bottom") 
+                        legend.position="bottom")      
   
   x_labels <- limma::strsplit2(levels(as.factor(wilcox.df$Bias)), split=" ")[,1]
   
